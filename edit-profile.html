@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>編輯個資與密碼</title>
+</head>
+<body>
+  <h2>👤 修改個人資料</h2>
+
+  <form id="editForm">
+    <input type="text" name="username" placeholder="帳號" required />
+    <input type="text" name="fullname" placeholder="姓名" required />
+    <input type="date" name="birthdate" required />
+    <select name="gender" required>
+      <option value="male">男</option>
+      <option value="female">女</option>
+      <option value="other">其他</option>
+    </select>
+
+    <p>過敏原：</p>
+    <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
+    <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
+    <label><input type="checkbox" name="allergens" value="花生"> 花生</label>
+    <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
+    <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
+
+    <br><br>
+    <label>飲食習慣：</label>
+    <select name="diet" required>
+      <option value="omnivore">一般葷食</option>
+      <option value="lacto-ovo">蛋奶素</option>
+      <option value="vegan">全素</option>
+    </select>
+
+    <label>健康目標：</label>
+    <select name="goal" required>
+      <option value="weight-loss">減重</option>
+      <option value="muscle-gain">增肌</option>
+      <option value="control-sugar">控制血糖</option>
+      <option value="general-health">一般健康</option>
+    </select>
+
+    <br><br>
+    <button type="submit">💾 儲存個資</button>
+  </form>
+
+  <hr>
+
+  <h2>🔐 修改密碼</h2>
+  <form id="passwordForm">
+    <input type="password" id="newPassword" placeholder="輸入新密碼" required />
+    <button type="submit">變更密碼</button>
+  </form>
+
+  <p id="status"></p>
+  <button id="logoutBtn">登出</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      updatePassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+      authDomain: "project-1c574.firebaseapp.com",
+      projectId: "project-1c574",
+      storageBucket: "project-1c574.appspot.com",
+      messagingSenderId: "88492956577",
+      appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const statusText = document.getElementById("status");
+    const editForm = document.getElementById("editForm");
+    const passwordForm = document.getElementById("passwordForm");
+
+    let currentUser = null;
+
+    // ✅ 檢查登入並載入個資
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        statusText.textContent = "請先登入，將導向登入頁...";
+        setTimeout(() => window.location.href = "login.html", 2000);
+        return;
+      }
+
+      currentUser = user;
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        editForm.username.value = data.username || "";
+        editForm.fullname.value = data.fullname || "";
+        editForm.birthdate.value = data.birthdate || "";
+        editForm.gender.value = data.gender || "";
+        editForm.diet.value = data.diet || "";
+        editForm.goal.value = data.goal || "";
+
+        const allergens = data.allergens || [];
+        editForm.querySelectorAll('input[name="allergens"]').forEach(input => {
+          input.checked = allergens.includes(input.value);
+        });
+      }
+    });
+
+    // ✅ 儲存個人資料
+    editForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const updatedData = {
+        username: editForm.username.value,
+        fullname: editForm.fullname.value,
+        birthdate: editForm.birthdate.value,
+        gender: editForm.gender.value,
+        diet: editForm.diet.value,
+        goal: editForm.goal.value,
+        allergens: Array.from(editForm.querySelectorAll('input[name="allergens"]:checked')).map(cb => cb.value),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await setDoc(doc(db, "users", currentUser.uid), updatedData, { merge: true });
+        statusText.textContent = "✅ 個人資料已更新";
+      } catch (err) {
+        statusText.textContent = `❌ 更新失敗：${err.message}`;
+      }
+    });
+
+    // ✅ 修改密碼
+    passwordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById("newPassword").value;
+
+      try {
+        await updatePassword(currentUser, newPassword);
+        statusText.textContent = "✅ 密碼已變更成功";
+        passwordForm.reset();
+      } catch (err) {
+        if (err.code === "auth/requires-recent-login") {
+          statusText.textContent = "⚠️ 請重新登入後再變更密碼";
+        } else {
+          statusText.textContent = `❌ 密碼修改失敗：${err.message}`;
+        }
+      }
+    });
+
+    // ✅ 登出
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+  </script>
+</body>
+</html>

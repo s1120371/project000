@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Firebase 註冊與登入整合</title>
+</head>
+<body>
+  <h2>使用者註冊</h2>
+  <form id="registerForm">
+    <input type="text" name="username" placeholder="帳號" required />
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="密碼" required />
+    <input type="password" name="confirm_password" placeholder="確認密碼" required />
+    <input type="text" name="fullname" placeholder="姓名" required />
+    <input type="date" name="birthdate" required />
+    <select name="gender" required>
+      <option value="">選擇性別</option>
+      <option value="male">男</option>
+      <option value="female">女</option>
+      <option value="other">其他</option>
+    </select>
+
+    <p>請勾選你會過敏的食物：</p>
+    <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
+    <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
+    <label><input type="checkbox" name="allergens" value="花生"> 花生</label>
+    <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
+    <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
+
+    <br><br>
+    <label>飲食習慣：</label>
+    <select name="diet" required>
+      <option value="">請選擇</option>
+      <option value="omnivore">一般葷食</option>
+      <option value="lacto-ovo">蛋奶素</option>
+      <option value="vegan">全素</option>
+    </select>
+
+    <br><br>
+    <label>健康目標：</label>
+    <select name="goal" required>
+      <option value="">請選擇</option>
+      <option value="weight-loss">減重</option>
+      <option value="muscle-gain">增肌</option>
+      <option value="control-sugar">控制血糖</option>
+      <option value="general-health">一般健康</option>
+    </select>
+
+    <br><br>
+    <button type="submit">註冊</button>
+  </form>
+
+  <h2>使用者登入</h2>
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="Email" required />
+    <input type="password" id="loginPassword" placeholder="密碼" required />
+    <button type="submit">登入</button>
+  </form>
+
+  <h3 id="status">🔒 尚未登入</h3>
+  <button id="logoutBtn" style="display:none;">登出</button>
+
+  <div id="userData" style="display:none;">
+    <h3>👤 使用者資料</h3>
+    <pre id="userInfo"></pre>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+      authDomain: "project-1c574.firebaseapp.com",
+      databaseURL: "https://project-1c574-default-rtdb.firebaseio.com",
+      projectId: "project-1c574",
+      storageBucket: "project-1c574.appspot.com",
+      messagingSenderId: "88492956577",
+      appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const status = document.getElementById("status");
+    const userDataDiv = document.getElementById("userData");
+    const userInfo = document.getElementById("userInfo");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // 註冊
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value;
+      const password = form.password.value;
+      const confirmPassword = form.confirm_password.value;
+      const username = form.username.value;
+      const fullname = form.fullname.value;
+      const birthdate = form.birthdate.value;
+      const gender = form.gender.value;
+      const diet = form.diet.value;
+      const goal = form.goal.value;
+      const allergens = Array.from(form.querySelectorAll('input[name="allergens"]:checked')).map(cb => cb.value);
+
+      if (password !== confirmPassword) {
+        status.textContent = "❌ 密碼與確認密碼不符";
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          username,
+          email,
+          fullname,
+          birthdate,
+          gender,
+          allergens,
+          diet,
+          goal,
+          createdAt: new Date().toISOString()
+        });
+
+        status.textContent = `✅ 註冊成功，歡迎 ${fullname}`;
+        form.reset();
+      } catch (err) {
+        status.textContent = `❌ 註冊失敗：${err.message}`;
+      }
+    });
+
+    // 登入
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        status.textContent = `✅ 登入成功：${user.email}`;
+      } catch (err) {
+        status.textContent = `❌ 登入失敗：${err.message}`;
+      }
+    });
+
+    // 登出
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // 狀態監聽：登入後讀取 Firestore 資料
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        status.textContent = `🔓 已登入：${user.email}`;
+        logoutBtn.style.display = "inline-block";
+
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          userDataDiv.style.display = "block";
+          userInfo.textContent = JSON.stringify(docSnap.data(), null, 2);
+        } else {
+          userInfo.textContent = "⚠️ 找不到使用者資料";
+        }
+      } else {
+        status.textContent = "🔒 尚未登入";
+        userDataDiv.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
