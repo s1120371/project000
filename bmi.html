@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>BMI 計算與歷史紀錄</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      background-color: #f4f6f9;
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #333;
+    }
+
+    h2, h3 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    input[type="number"] {
+      padding: 10px;
+      margin-top: 5px;
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 25px;
+      padding: 12px 24px;
+      background: #4caf50;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background: #388e3c;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 40px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #4caf50;
+      color: white;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    canvas {
+      margin-top: 40px;
+    }
+
+    /* 返回主畫面按鈕 */
+    #backButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #2196f3;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+    }
+
+    #backButton:hover {
+      background-color: #1976d2;
+    }
+
+    .delete-btn {
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .delete-btn:hover {
+      background-color: #c62828;
+    }
+
+  </style>
+</head>
+<body>
+  <a href="home.html" id="backButton">🔙 返回主畫面</a>
+
+  <h2>BMI 計算器</h2>
+  <p id="status">登入狀態載入中...</p>
+
+  <label>身高 (cm)
+    <input type="number" id="height" min="50" max="300" required />
+  </label>
+
+  <label>體重 (kg)
+    <input type="number" id="weight" min="10" max="300" required />
+  </label>
+
+  <button onclick="calculateAndSaveBMI()">計算並儲存 BMI</button>
+  <p id="result"></p>
+
+  <h3>歷史 BMI 紀錄</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>時間</th>
+        <th>身高</th>
+        <th>體重</th>
+        <th>BMI (分類)</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="recordListBody">
+      <!-- 紀錄會動態插入 -->
+    </tbody>
+  </table>
+
+  <h3>BMI 趨勢圖</h3>
+  <canvas id="bmiChart" width="700" height="350"></canvas>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      getDocs,
+      deleteDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+      authDomain: "project-1c574.firebaseapp.com",
+      projectId: "project-1c574",
+      storageBucket: "project-1c574.appspot.com",
+      messagingSenderId: "88492956577",
+      appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('status').textContent = `👤 已登入：${user.email}`;
+        await loadBMIRecords();
+      } else {
+        alert("請先登入！");
+        window.location.href = "login.html";
+      }
+    });
+
+    window.calculateAndSaveBMI = async function () {
+      const height = parseFloat(document.getElementById('height').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+
+      if (!height || !weight) {
+        alert("請輸入正確的身高與體重！");
+        return;
+      }
+
+      const bmi = weight / ((height / 100) ** 2);
+      const roundedBMI = parseFloat(bmi.toFixed(2));
+      document.getElementById('result').textContent = `你的 BMI 為：${roundedBMI} (${getBMICategory(roundedBMI)})`;
+
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0];
+
+      try {
+        const ref = collection(db, "users", currentUser.uid, "bmiRecords");
+        await addDoc(ref, {
+          height,
+          weight,
+          bmi: roundedBMI,
+          date: dateStr,
+          time: timeStr
+        });
+        alert("✅ BMI 紀錄已儲存！");
+        await loadBMIRecords();
+      } catch (err) {
+        alert("❌ 儲存失敗：" + err.message);
+      }
+    };
+
+    function getBMICategory(bmi) {
+      if (bmi < 18.5) return "過輕";
+      else if (bmi < 24) return "正常";
+      else if (bmi < 27) return "過重";
+      else if (bmi < 30) return "輕度肥胖";
+      else if (bmi < 35) return "中度肥胖";
+      else return "重度肥胖";
+    }
+
+    async function loadBMIRecords() {
+      const listTbody = document.getElementById("recordListBody");
+      listTbody.innerHTML = "";
+
+      const q = query(
+        collection(db, "users", currentUser.uid, "bmiRecords"),
+        orderBy("date", "desc"),
+        orderBy("time", "desc")
+      );
+      const snapshot = await getDocs(q);
+
+      const labels = [];
+      const data = [];
+
+      snapshot.forEach((docSnap) => {
+        const record = docSnap.data();
+        const docId = docSnap.id;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${record.date}</td>
+          <td>${record.time}</td>
+          <td>${record.height} cm</td>
+          <td>${record.weight} kg</td>
+          <td>${record.bmi} (${getBMICategory(record.bmi)})</td>
+          <td><button class="delete-btn" onclick="deleteBMI('${docId}')">刪除</button></td>
+        `;
+        listTbody.appendChild(tr);
+
+        labels.unshift(`${record.date} ${record.time}`);
+        data.unshift(record.bmi);
+      });
+
+      drawChart(labels, data);
+    }
+
+    window.deleteBMI = async function (docId) {
+      if (!confirm("確定要刪除此紀錄？")) return;
+
+      const ref = doc(db, "users", currentUser.uid, "bmiRecords", docId);
+      await deleteDoc(ref);
+      await loadBMIRecords();
+    };
+
+    function drawChart(labels, data) {
+      const ctx = document.getElementById("bmiChart").getContext("2d");
+      if (window.bmiChartInstance) {
+        window.bmiChartInstance.destroy();
+      }
+
+      window.bmiChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "BMI 趨勢",
+            data,
+            borderColor: "#4caf50",
+            backgroundColor: "rgba(76,175,80,0.2)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              suggestedMin: 10,
+              suggestedMax: 40
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.parsed.y} (${getBMICategory(ctx.parsed.y)})`
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
