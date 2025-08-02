@@ -13,6 +13,7 @@
     <input type="password" name="confirm_password" placeholder="確認密碼" required />
     <input type="text" name="fullname" placeholder="姓名" required />
     <input type="date" name="birthdate" required />
+
     <select name="gender" required>
       <option value="">選擇性別</option>
       <option value="male">男</option>
@@ -67,13 +68,23 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
       authDomain: "project-1c574.firebaseapp.com",
-      databaseURL: "https://project-1c574-default-rtdb.firebaseio.com",
       projectId: "project-1c574",
       storageBucket: "project-1c574.appspot.com",
       messagingSenderId: "88492956577",
@@ -89,7 +100,7 @@
     const userInfo = document.getElementById("userInfo");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    // 註冊
+    // 註冊事件
     document.getElementById("registerForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -132,7 +143,7 @@
       }
     });
 
-    // 登入
+    // 登入事件
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("loginEmail").value;
@@ -142,17 +153,22 @@
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         status.textContent = `✅ 登入成功：${user.email}`;
+
+        // 跳轉至首頁
+        setTimeout(() => {
+          window.location.href = "home.html";
+        }, 1000);
       } catch (err) {
         status.textContent = `❌ 登入失敗：${err.message}`;
       }
     });
 
-    // 登出
+    // 登出事件
     logoutBtn.addEventListener("click", async () => {
       await signOut(auth);
     });
 
-    // 狀態監聽：登入後讀取 Firestore 資料
+    // 登入狀態變化
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         status.textContent = `🔓 已登入：${user.email}`;
