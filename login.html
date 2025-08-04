@@ -2,68 +2,170 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Firebase 註冊與登入整合</title>
+  <title>健康管家會員系統</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background-color: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 420px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #2e7d32;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    select {
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      background-color: #4caf50;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 10px;
+      background-color: #ddd;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 6px 6px 0 0;
+    }
+
+    .tabs .active {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: -6px;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-group label {
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 10px;
+      color: red;
+    }
+  </style>
 </head>
 <body>
-  <h2>使用者註冊</h2>
-  <form id="registerForm">
-    <input type="text" name="username" placeholder="帳號" required />
-    <input type="email" name="email" placeholder="Email" required />
-    <input type="password" name="password" placeholder="密碼" required />
-    <input type="password" name="confirm_password" placeholder="確認密碼" required />
-    <input type="text" name="fullname" placeholder="姓名" required />
-    <input type="date" name="birthdate" required />
+  <div class="card">
+    <h2>健康管家會員系統</h2>
 
-    <select name="gender" required>
-      <option value="">選擇性別</option>
-      <option value="male">男</option>
-      <option value="female">女</option>
-      <option value="other">其他</option>
-    </select>
+    <div class="tabs">
+      <button id="tab-login" class="active">登入</button>
+      <button id="tab-register">註冊</button>
+    </div>
 
-    <p>請勾選你會過敏的食物：</p>
-    <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
-    <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
-    <label><input type="checkbox" name="allergens" value="花生"> 花生</label>
-    <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
-    <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
+    <form id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Email" required />
+      <input type="password" id="loginPassword" placeholder="密碼" required />
+      <button type="submit">登入</button>
+    </form>
 
-    <br><br>
-    <label>飲食習慣：</label>
-    <select name="diet" required>
-      <option value="">請選擇</option>
-      <option value="omnivore">一般葷食</option>
-      <option value="lacto-ovo">蛋奶素</option>
-      <option value="vegan">全素</option>
-    </select>
+    <form id="registerForm" class="hidden">
+      <input type="text" name="username" placeholder="帳號" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="密碼" required />
+      <input type="password" name="confirm_password" placeholder="確認密碼" required />
+      <input type="text" name="fullname" placeholder="姓名" required />
+      <input type="date" name="birthdate" required />
 
-    <br><br>
-    <label>健康目標：</label>
-    <select name="goal" required>
-      <option value="">請選擇</option>
-      <option value="weight-loss">減重</option>
-      <option value="muscle-gain">增肌</option>
-      <option value="control-sugar">控制血糖</option>
-      <option value="general-health">一般健康</option>
-    </select>
+      <select name="gender" required>
+        <option value="">選擇性別</option>
+        <option value="male">男</option>
+        <option value="female">女</option>
+        <option value="other">其他</option>
+      </select>
 
-    <br><br>
-    <button type="submit">註冊</button>
-  </form>
+      <label>請勾選你會過敏的食物：</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
+        <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
+        <label><input type="checkbox" name="allergens" value="花生"> 花生</label>
+        <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
+        <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
+      </div>
 
-  <h2>使用者登入</h2>
-  <form id="loginForm">
-    <input type="email" id="loginEmail" placeholder="Email" required />
-    <input type="password" id="loginPassword" placeholder="密碼" required />
-    <button type="submit">登入</button>
-  </form>
+      <label>飲食習慣：</label>
+      <select name="diet" required>
+        <option value="">請選擇</option>
+        <option value="omnivore">一般葷食</option>
+        <option value="lacto-ovo">蛋奶素</option>
+        <option value="vegan">全素</option>
+      </select>
 
-  <h3 id="status">🔒 尚未登入</h3>
-  <button id="logoutBtn" style="display:none;">登出</button>
+      <label>健康目標：</label>
+      <select name="goal" required>
+        <option value="">請選擇</option>
+        <option value="weight-loss">減重</option>
+        <option value="muscle-gain">增肌</option>
+        <option value="control-sugar">控制血糖</option>
+        <option value="general-health">一般健康</option>
+      </select>
 
-  <div id="userData" style="display:none;">
-    <h3>👤 使用者資料</h3>
-    <pre id="userInfo"></pre>
+      <button type="submit">註冊</button>
+    </form>
+
+    <div id="status"></div>
   </div>
 
   <script type="module">
@@ -71,15 +173,12 @@
     import {
       getAuth,
       createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
+      signInWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
     import {
       getFirestore,
       doc,
-      setDoc,
-      getDoc
+      setDoc
     } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -94,13 +193,9 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
     const status = document.getElementById("status");
-    const userDataDiv = document.getElementById("userData");
-    const userInfo = document.getElementById("userInfo");
-    const logoutBtn = document.getElementById("logoutBtn");
 
-    // 註冊事件
+    // 註冊
     document.getElementById("registerForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -143,50 +238,34 @@
       }
     });
 
-    // 登入事件
+    // 登入
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("loginEmail").value;
       const password = document.getElementById("loginPassword").value;
 
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        status.textContent = `✅ 登入成功：${user.email}`;
-
-        // 跳轉至首頁
-        setTimeout(() => {
-          window.location.href = "home.html";
-        }, 1000);
+        await signInWithEmailAndPassword(auth, email, password);
+        // ✅ 登入成功後直接跳轉
+        window.location.href = "home.html";
       } catch (err) {
         status.textContent = `❌ 登入失敗：${err.message}`;
       }
     });
 
-    // 登出事件
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
+    // 切換 tab
+    document.getElementById("tab-login").addEventListener("click", () => {
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("tab-login").classList.add("active");
+      document.getElementById("tab-register").classList.remove("active");
     });
 
-    // 登入狀態變化
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        status.textContent = `🔓 已登入：${user.email}`;
-        logoutBtn.style.display = "inline-block";
-
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          userDataDiv.style.display = "block";
-          userInfo.textContent = JSON.stringify(docSnap.data(), null, 2);
-        } else {
-          userInfo.textContent = "⚠️ 找不到使用者資料";
-        }
-      } else {
-        status.textContent = "🔒 尚未登入";
-        userDataDiv.style.display = "none";
-        logoutBtn.style.display = "none";
-      }
+    document.getElementById("tab-register").addEventListener("click", () => {
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("registerForm").classList.remove("hidden");
+      document.getElementById("tab-login").classList.remove("active");
+      document.getElementById("tab-register").classList.add("active");
     });
   </script>
 </body>

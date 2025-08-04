@@ -31,7 +31,7 @@
     <div class="container">
       <h1>健康管家</h1>
       <nav>
-        <span id="user-email" style="margin-right: 20px;"></span>
+        <span id="user-identity" style="margin-right: 20px;"></span>
         <span id="login-links"><a href="login.html">登入 / 註冊</a></span>
         <span id="auth-links" style="display: none;">
           <a href="edit-profile.html">個人資料</a>
@@ -101,7 +101,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const userEmailSpan = document.getElementById("user-email");
+    const userIdentity = document.getElementById("user-identity");
     const authLinks = document.getElementById("auth-links");
     const loginLinks = document.getElementById("login-links");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -110,7 +110,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        userEmailSpan.textContent = "";
+        userIdentity.textContent = "";
         authLinks.style.display = "none";
         loginLinks.style.display = "inline";
         welcomeTitle.textContent = "尚未登入，將導向登入頁...";
@@ -118,15 +118,20 @@
         return;
       }
 
-      userEmailSpan.textContent = user.email;
       authLinks.style.display = "inline";
       loginLinks.style.display = "none";
-      welcomeTitle.textContent = `👋 歡迎回來，${user.email}`;
 
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
+
       if (docSnap.exists()) {
         const data = docSnap.data();
+
+        // 👇 歡迎語與右上角名稱都顯示 username（找不到就 fallback 成 email）
+        const username = data.username;
+        welcomeTitle.textContent = `👋 歡迎回來，${username}`;
+        userIdentity.textContent = username;
+
         userInfoBox.style.display = "block";
         document.getElementById("username").textContent = data.username || "未填寫";
         document.getElementById("fullname").textContent = data.fullname || "未填寫";
