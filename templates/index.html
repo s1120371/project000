@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康飲食問答AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+
+        #header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        #chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #input-area {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        #send-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #45a049;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #e1f5fe;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background-color: #f1f1f1;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat-container">
+        <div id="header">
+            <h2>健康飲食問答 AI</h2>
+        </div>
+        <div id="chat-box">
+            <div class="message ai-message">哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="在這裡輸入你的問題...">
+            <button id="send-btn">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // 當按下送出按鈕時觸發
+        sendBtn.addEventListener('click', sendMessage);
+
+        // 當在輸入框按下 Enter 鍵時觸發
+        userInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const question = userInput.value.trim();
+            if (question === '') return;
+
+            // 在聊天室顯示使用者自己的問題
+            appendMessage(question, 'user');
+            userInput.value = ''; // 清空輸入框
+
+            // 顯示 "思考中..." 的提示
+            const thinkingMessage = appendMessage('...', 'ai');
+
+            try {
+                // 使用 fetch API 將問題 POST 到我們的 Flask 後端 /ask
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+
+                // 將 "思考中..." 的訊息更新為 AI 的真正答案
+                thinkingMessage.innerText = data.answer;
+
+            } catch (error) {
+                console.error('Error:', error);
+                thinkingMessage.innerText = '糟糕，發生了一點錯誤，請稍後再試。';
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender + '-message');
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            // 自動捲動到最下面
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return messageDiv;
+        }
+    </script>
+</body>
+
+</html>
