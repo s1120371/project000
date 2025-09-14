@@ -76,25 +76,8 @@
       padding: 60px 0;
       text-align: center;
     }
-
-    .hero h3 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-    }
-
-    .map-preview,
-    .user-data {
-      padding: 40px 0;
-    }
-
-    #map {
-      width: 100%;
-      height: 400px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-    }
-
     footer {
+      width: 100%;
       background-color: #f1f1f1;
       color: #666;
       text-align: center;
@@ -118,6 +101,7 @@
       padding: 40px 0;
       background-color: #f4f9ff;
       text-align: left;
+      
     }
 
     .news-preview h3 {
@@ -134,6 +118,7 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      align-items: center;
     }
 
     .news-item {
@@ -145,6 +130,11 @@
       position: relative;
       overflow: hidden;
       border-left: 5px solid #2e5caa;
+
+      width: 100%;          /* 在小螢幕下可以滿版 */
+      max-width: 1000px;     /* ✅ 限制最大寬度 */
+      margin: 0 auto;       /* ✅ 強制置中（保險做法） */
+      text-align: left;     /* 文字保持靠左 */
     }
 
     .news-item:hover {
@@ -244,7 +234,7 @@
   </header>
 
   <nav class="top-function-nav container">
-    <a href="#map">📍 地點紀錄</a>
+    <!--<a href="#map">📍 地點紀錄</a>-->
     <a href="#">🍱 營養分析</a>
     <a href="http://127.0.0.1:5000/">❤️ 健康建議</a>
     <a href="#">📊 趨勢統計</a>
@@ -277,6 +267,8 @@
     <h2>地圖預覽</h2>
     <div id="map"></div>
   </section> -->
+  <section class="news-preview">
+    <div class="container">
   <h3>📢 相關新聞</h3>
   <div class="news-list">
     <div class="news-item">
@@ -294,12 +286,11 @@
       <p>研究指出，蛋白質攝取不足會導致過度進食、熱量超標，反而變胖。減重時應確保飲食中蛋白質達15%，提升飽足感、穩定食慾，才能有效控制體重，避免高脂與高糖飲食。</p>
       <a href="https://tw.news.yahoo.com/%E6%B8%9B%E8%82%A5%E5%A4%B1%E6%95%97%E7%9C%9F%E7%9B%B8%E6%9B%9D%E5%85%89-%E8%9B%8B%E7%99%BD%E8%B3%AA%E5%90%83%E4%B8%8D%E5%A4%A0%E6%89%8D%E6%98%AF%E4%B8%BB%E5%9B%A0-002333952.html"
         class="news-btn">閱讀全文</a>
+      </div>
     </div>
   </div>
   <footer>
-    <div class="container">
       <p>&copy; 2025 健康管家 Health Tracker</p>
-    </div>
   </footer>
 
   <!-- Firebase 認證 + Firestore -->
