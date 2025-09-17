@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康飲食問答AI</title>
     <style>
+        /* 您的 CSS 樣式維持不變 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
@@ -98,6 +99,7 @@
     <div id="chat-container">
         <div id="header">
             <h2>健康飲食問答 AI</h2>
+            <p id="auth-status" style="font-size: 0.8em; margin-top: 5px;">正在檢查登入狀態...</p>
         </div>
         <div id="chat-box">
             <div class="message ai-message">哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！</div>
@@ -108,59 +110,104 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        // 您的 Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+            authDomain: "project-1c574.firebaseapp.com",
+            projectId: "project-1c574",
+            storageBucket: "project-1c574.appspot.com",
+            messagingSenderId: "88492956577",
+            appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const authStatus = document.getElementById('auth-status');
+        let currentUser = null;
 
-        // 當按下送出按鈕時觸發
-        sendBtn.addEventListener('click', sendMessage);
-
-        // 當在輸入框按下 Enter 鍵時觸發
-        userInput.addEventListener('keypress', function (event) {
-            if (event.key === 'Enter') {
-                sendMessage();
+        // 監聽使用者登入狀態
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // 使用者已登入
+                currentUser = user;
+                authStatus.textContent = `已登入：${user.email}`;
+                sendBtn.disabled = false;
+                userInput.disabled = false;
+            } else {
+                // 使用者未登入
+                currentUser = null;
+                authStatus.textContent = "⚠ 您尚未登入，請先前往主頁登入！";
+                sendBtn.disabled = true;
+                userInput.disabled = true;
+                appendMessage('請先登入才能使用個人化問答功能。', 'ai');
             }
         });
 
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') sendMessage();
+        });
+
         async function sendMessage() {
+            // 確認使用者已登入
+            if (!currentUser) {
+                alert("請先登入！");
+                return;
+            }
+
             const question = userInput.value.trim();
             if (question === '') return;
 
-            // 在聊天室顯示使用者自己的問題
             appendMessage(question, 'user');
-            userInput.value = ''; // 清空輸入框
+            userInput.value = '';
 
-            // 顯示 "思考中..." 的提示
-            const thinkingMessage = appendMessage('...', 'ai');
+            const thinkingMessage = appendMessage('AI 思考中...', 'ai');
 
             try {
-                // 使用 fetch API 將問題 POST 到我們的 Flask 後端 /ask
+                // *** 關鍵：取得使用者的 ID Token ***
+                const idToken = await currentUser.getIdToken();
+
+                // 將問題和 Token 一起發送到後端
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ question: question })
+                    // *** 在 body 中同時包含問題和 idToken ***
+                    body: JSON.stringify({
+                        question: question,
+                        idToken: idToken
+                    })
                 });
 
-                const data = await response.json();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.answer || `HTTP error! status: ${response.status}`);
+                }
 
-                // 將 "思考中..." 的訊息更新為 AI 的真正答案
+                const data = await response.json();
                 thinkingMessage.innerText = data.answer;
 
             } catch (error) {
                 console.error('Error:', error);
-                thinkingMessage.innerText = '糟糕，發生了一點錯誤，請稍後再試。';
+                thinkingMessage.innerText = `糟糕，發生錯誤：${error.message}`;
             }
         }
 
         function appendMessage(text, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', sender + '-message');
-            messageDiv.innerText = text;
+            // 將換行符 \n 轉換為 <br> 標籤，以便在 HTML 中正確顯示換行
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
             chatBox.appendChild(messageDiv);
-            // 自動捲動到最下面
             chatBox.scrollTop = chatBox.scrollHeight;
             return messageDiv;
         }
