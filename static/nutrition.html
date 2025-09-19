@@ -1,0 +1,138 @@
+<!-- static/nutrition.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🍱 營養分析｜健康管家</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --green:#4caf50; --dark:#2e7d32; --bg:#f4f6f9; }
+    *{ box-sizing:border-box }
+    body{ font-family:'Noto Sans TC',system-ui; background:var(--bg); max-width:960px; margin:40px auto; padding:0 20px; color:#333 }
+    h2{ color:var(--dark); margin-bottom:8px }
+    .card{ background:#fff; border:1px solid #e6e9ef; border-radius:14px; box-shadow:0 6px 20px rgba(30,60,90,.06); padding:18px; margin-bottom:18px }
+    .uploader{ border:2px dashed #cfd7e3; background:#fafcff; padding:18px; border-radius:12px; text-align:center }
+    #preview{ max-width:100%; border-radius:12px; display:none; margin-top:12px }
+    button{ margin-top:12px; padding:10px 16px; background:var(--green); color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer }
+    .muted{ color:#666; font-size:14px }
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap }
+    .pill{ background:#e8f5e9; color:var(--dark); padding:6px 10px; border-radius:999px; font-weight:700 }
+    .result{ display:none }
+    .kv{ display:grid; grid-template-columns:140px 1fr; gap:8px; align-items:center; }
+    .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+    .spinner{ display:none; margin-left:8px }
+  </style>
+</head>
+<body>
+  <a href="/home" style="position:fixed;right:20px;top:20px;background:#2196f3;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none;font-weight:800;">🔙 返回主畫面</a>
+
+  <h2>🍱 營養分析</h2>
+  <p class="muted">上傳食物照片 → 先用 AI 推測名稱 → 再查 FatSecret 營養資料（以每 100g 為基準）。</p>
+
+  <section class="card">
+    <div class="uploader">
+      <input id="file" type="file" accept="image/*"/>
+      <img id="preview" alt="preview"/>
+      <div class="row">
+        <button id="analyzeBtn">辨識並查營養</button>
+        <span id="loading" class="spinner">🔄 處理中…</span>
+      </div>
+      <div class="muted">支援：手機/電腦相片。建議清楚單一食物。</div>
+    </div>
+  </section>
+
+  <section id="resCard" class="card result">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><span class="pill">推測名稱</span><strong id="labelZh">—</strong><span class="muted" id="labelEn" style="margin-left:8px"></span></div>
+      <div class="row mono muted" id="fatsecretInfo">FatSecret 查詢中…</div>
+    </div>
+    <div style="height:10px"></div>
+    <div class="kv">
+      <div>熱量（kcal/100g）</div><div id="cal">—</div>
+      <div>蛋白質（g/100g）</div><div id="protein">—</div>
+      <div>脂肪（g/100g）</div><div id="fat">—</div>
+      <div>碳水（g/100g）</div><div id="carb">—</div>
+    </div>
+  </section>
+
+  <!-- 前端模型：TensorFlow.js + MobileNet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0"></script>
+  <script>
+    const fileEl = document.getElementById('file');
+    const preview = document.getElementById('preview');
+    const btn = document.getElementById('analyzeBtn');
+    const spin = document.getElementById('loading');
+    const resCard = document.getElementById('resCard');
+    const labelZh = document.getElementById('labelZh');
+    const labelEn = document.getElementById('labelEn');
+    const info = document.getElementById('fatsecretInfo');
+    const cal = document.getElementById('cal'), protein = document.getElementById('protein'),
+          fat = document.getElementById('fat'), carb = document.getElementById('carb');
+
+    // 英文→常見中文對照（先放幾個，之後可擴充或改用字典檔）
+    const EN_ZH = {
+      "banana":"香蕉","apple":"蘋果","orange":"橙/柳丁","strawberry":"草莓","blueberry":"藍莓",
+      "grape":"葡萄","mango":"芒果","pineapple":"鳳梨","watermelon":"西瓜",
+      "bread":"麵包","hamburger":"漢堡","pizza":"披薩","noodles":"麵條","rice":"白飯",
+      "fried chicken":"炸雞","chicken breast":"雞胸肉","salmon":"鮭魚","beef":"牛肉","pork":"豬肉",
+      "tofu":"豆腐","egg":"雞蛋","milk":"牛奶","yogurt":"優格","cheese":"起司"
+    };
+
+    let model;
+    mobilenet.load().then(m=> model = m);
+
+    fileEl.addEventListener('change', () => {
+      const f = fileEl.files?.[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      preview.src = url;
+      preview.style.display = 'block';
+    });
+
+    btn.addEventListener('click', async () => {
+      try{
+        const f = fileEl.files?.[0];
+        if(!f){ alert('請先選擇圖片'); return; }
+        if(!model){ alert('模型載入中，稍後再試'); return; }
+        spin.style.display = 'inline-block';
+        resCard.style.display = 'none';
+
+        // 1) 圖片辨識（Top-1）
+        await new Promise(r=> setTimeout(r, 50)); // 讓圖片渲染
+        const preds = await model.classify(preview, 1);
+        const top = preds?.[0];
+        const en = (top?.className || '').toLowerCase();
+        const key = Object.keys(EN_ZH).find(k=> en.includes(k)) || en.split(',')[0];
+        const zh = EN_ZH[key] || key;
+
+        labelZh.textContent = zh || '（未知）';
+        labelEn.textContent = zh? `（${en}）` : en || '—';
+
+        // 2) 查 FatSecret
+        info.textContent = 'FatSecret 查詢中…';
+        const q = encodeURIComponent(zh || en);
+        const resp = await fetch(`/api/fatsecret/search?query=${q}`);
+        if(!resp.ok) throw new Error('FatSecret 查詢失敗');
+        const data = await resp.json();
+
+        // 期待 data 格式：{ name, per100g: { calories, protein, fat, carbs }, raw }
+        const d = data?.per100g || {};
+        cal.textContent = d.calories ?? '—';
+        protein.textContent = d.protein ?? '—';
+        fat.textContent = d.fat ?? '—';
+        carb.textContent = d.carbs ?? '—';
+        info.textContent = data?.name ? `來源：${data.name}` : '—';
+
+        resCard.style.display = 'block';
+      }catch(err){
+        console.error(err);
+        alert('辨識或查詢發生錯誤，請換張更清楚的照片再試一次');
+      }finally{
+        spin.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
