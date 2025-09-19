@@ -134,6 +134,11 @@ def achievements_page():
 def bmi_page():
     return send_from_directory('static', 'bmi.html')
 
+# 提供 營養分析頁面
+@app.route('/nutrition')
+def nutrition_page():
+    return send_from_directory('static', 'nutrition.html')
+
 # 問答 API 路由
 @app.route('/ask', methods=['POST'])
 def ask():
