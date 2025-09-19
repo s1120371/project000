@@ -124,6 +124,11 @@ def home_page():
 def edit_profile_page():
     return send_from_directory('static', 'edit-profile.html')
 
+# 提供 成就頁面
+@app.route('/achievements')
+def achievements_page():
+    return send_from_directory('static', 'achievements.html')
+
 # 提供 BMI 計算頁面
 @app.route('/bmi')
 def bmi_page():
