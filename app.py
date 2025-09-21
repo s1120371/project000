@@ -1,106 +1,114 @@
 # 載入我們需要的函式庫
 from flask import Flask, request, jsonify, render_template, send_from_directory
-from sentence_transformers import SentenceTransformer, util
-import json
+# 舊的 SentenceTransformer 不再需要了
+# from sentence_transformers import SentenceTransformer, util 
+# import json # 知識庫也不再需要了
 import torch
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
+
+# --- 新增：載入 Hugging Face 的 pipeline ---
+from transformers import pipeline
 
 # ------------------ 初始化設定 ------------------
 
 # 建立一個 Flask 應用
 app = Flask(__name__)
 
-# --- Firebase Admin SDK 初始化 ---
+# --- Firebase Admin SDK 初始化 (維持不變) ---
 cred = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# --- AI 模型與知識庫載入 (維持不變) ---
-print("正在載入AI模型...")
-model = SentenceTransformer('distiluse-base-multilingual-cased-v1')
-print("AI模型載入完成！")
-with open('knowledge_base.json', 'r', encoding='utf-8') as f:
-    knowledge_base = json.load(f)
-kb_questions = [item['question'] for item in knowledge_base]
-print("正在將知識庫轉換為向量...")
-kb_embeddings = model.encode(kb_questions, convert_to_tensor=True)
-print("知識庫向量轉換完成！")
+# --- AI 模型與知識庫載入 (*** 大幅修改 ***) ---
+print("正在載入 Llama 3 AI 模型...")
+# 選擇 Llama 3 8B 指令微調模型
+model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+
+# 建立一個文字生成的 pipeline
+# device_map="auto" 會自動偵測是否有可用的 GPU
+# torch_dtype=torch.bfloat16 可以節省記憶體並加速
+llama_pipeline = pipeline(
+    "text-generation",
+    model=model_id,
+    model_kwargs={"torch_dtype": torch.bfloat16},
+    device_map="auto",
+)
+print("Llama 3 AI 模型載入完成！")
+
+# 舊的知識庫相關程式碼可以全部刪除
+# with open('knowledge_base.json', 'r', encoding='utf-8') as f:
+#     knowledge_base = json.load(f)
+# kb_questions = [item['question'] for item in knowledge_base]
+# print("正在將知識庫轉換為向量...")
+# kb_embeddings = model.encode(kb_questions, convert_to_tensor=True)
+# print("知識庫向量轉換完成！")
 
 
-# ------------------ 核心AI功能函式 (已大幅升級) ------------------
+# ------------------ 核心AI功能函式 (*** 全新重寫 ***) ------------------
 
-def generate_personalized_advice(user_query, user_profile):
+def generate_llama_advice(user_query, user_profile):
     """
-    這個函式負責找出與使用者問題最相近的答案，並結合使用者資料生成個人化建議。
-    (V2.0 - 增強版邏輯)
+    這個函式負責將使用者問題和個人資料打包成提示，
+    並呼叫 Llama 3 模型來生成個人化建議。
+    (V3.0 - Llama 生成式 AI)
     """
-    # 1. 取得基礎答案 (邏輯不變)
-    query_embedding = model.encode(user_query, convert_to_tensor=True)
-    cosine_scores = util.cos_sim(query_embedding, kb_embeddings)
-    best_match_idx = torch.argmax(cosine_scores)
-    best_score = cosine_scores[0][best_match_idx]
+    # 1. --- 建立系統提示 (System Prompt) ---
+    # 告訴 AI 它的角色和行為準則
+    system_prompt = """你是一個專業又親切的「健康管家 AI」，你的任務是根據使用者的個人健康資料和他們提出的問題，提供準確、個人化且安全的健康飲食建議。
 
-    base_answer = ""
-    if best_score > 0.5:
-        base_answer = knowledge_base[best_match_idx]['answer']
-    else:
-        base_answer = "抱歉，我對這個問題還不太了解。但我可以根據你的個人資料給一些通用建議。"
+請遵循以下規則：
+1.  **使用繁體中文** 回答所有問題。
+2.  你的回答應該要**整合**使用者的個人資料，而不是分開條列。
+3.  如果使用者的問題涉及到他的過敏原，請**務必**在回答中提出明確的安全警告。
+4.  保持回覆簡潔、溫暖、易於理解。
+"""
 
-    # --- 關鍵：開始生成個人化建議 (全新邏輯) ---
+    # 2. --- 整理使用者個人資料 ---
+    # 將字典格式的 profile 轉換為人類易讀的文字
+    goal_map = {
+        'weight-loss': '減重', 'muscle-gain': '增肌',
+        'control-sugar': '控制血糖', 'general-health': '維持一般健康'
+    }
+    diet_map = {
+        'omnivore': '一般葷食', 'lacto-ovo': '蛋奶素', 'vegan': '全素'
+    }
+
+    profile_text = f"""
+- 健康目標: {goal_map.get(user_profile.get('goal'), '未設定')}
+- 飲食習慣: {diet_map.get(user_profile.get('diet'), '未設定')}
+- 已知過敏原: {', '.join(user_profile.get('allergens', [])) or '無'}
+"""
+
+    # 3. --- 組合完整的對話式 Prompt ---
+    # Llama 3 使用特定的對話模板，我們用 list of dicts 來建構
+    messages = [
+        {
+            "role": "system", 
+            "content": system_prompt + "\n這是正在跟你對話的使用者的個人資料：\n" + profile_text
+        },
+        {"role": "user", "content": user_query},
+    ]
+
+    # 4. --- 呼叫模型生成答案 ---
+    # `max_new_tokens` 限制回答的長度，避免過長
+    # `do_sample=True`, `temperature`, `top_p` 讓回答更有創意，不死板
+    outputs = llama_pipeline(
+        messages,
+        max_new_tokens=512,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.95,
+    )
+
+    # 5. --- 清理並回傳結果 ---
+    # pipeline 的輸出會包含你給的 prompt，我們需要把它切掉，只留下 AI 生成的部分
+    full_response = outputs[0]["generated_text"]
+    # 這是從 Llama 3 回應中提取助理回答的標準方法
+    assistant_response = full_response[-1]['content']
     
-    # 使用一個列表來收集所有個人化建議，更清晰好管理
-    personal_advice_list = []
-    goal = user_profile.get('goal')
-    diet = user_profile.get('diet')
-    allergens = user_profile.get('allergens', [])
+    return assistant_response
 
-    # === 判斷 1: 根據健康目標 ===
-    if goal == 'weight-loss':
-        if '吃' in user_query or '外食' in user_query:
-            personal_advice_list.append("因為您的目標是減重，建議優先選擇低熱量、高纖維的食物，並多用蒸、煮代替油炸。")
-        if '新陳代謝' in user_query:
-            personal_advice_list.append("為了配合您的減重目標，增加肌肉量是提升基礎代謝率的好方法，可以考慮加入適度的重量訓練。")
-            
-    elif goal == 'muscle-gain':
-        if '吃' in user_query or '運動' in user_query or '健身' in user_query:
-            # ✨ 多重條件判斷：目標(增肌) + 飲食習慣(素食)
-            if diet == 'vegan':
-                personal_advice_list.append("為了幫助您增肌，身為全素者的您可以多攝取豆腐、天貝、鷹嘴豆和各式豆類來補充優質植物性蛋白。")
-            elif diet == 'lacto-ovo':
-                personal_advice_list.append("為了幫助您增肌，身為蛋奶素的您可以多攝取雞蛋、牛奶、希臘優格等優質蛋白質。")
-            else:
-                personal_advice_list.append("為了幫助您增肌，請確保攝取足夠的優質蛋白質，尤其是在運動後。雞胸肉、魚肉和雞蛋都是很好的選擇。")
-
-    elif goal == 'control-sugar':
-        if '吃' in user_query or '高血壓' in user_query:
-            personal_advice_list.append("考量到您控制血糖的目標，建議選擇低GI值的食物，如糙米、燕麥和綠色蔬菜，並遵循少油、少鹽、少糖的原則。")
-
-    # === 判斷 2: 根據飲食習慣 (提供替代方案) ===
-    # 這個判斷可以在目標判斷之外獨立存在
-    if diet == 'vegan' and ('肉' in base_answer or '奶' in base_answer or '蛋' in base_answer or '海鮮' in base_answer):
-        personal_advice_list.append("提醒您是全素者，可以將答案中的動物性成分替換為植物性來源，如豆漿、豆腐或植物肉。")
-    elif diet == 'lacto-ovo' and ('肉' in base_answer or '海鮮' in base_answer):
-        personal_advice_list.append("提醒您是蛋奶素者，可以將答案中的肉類替換成雞蛋、乳製品或植物性蛋白。")
-
-    # === 判斷 3: 根據過敏源 (提供警告) ===
-    # 這個判斷的優先級最高，因為關乎安全
-    for allergen in allergens:
-        if allergen in base_answer:
-            # 使用 f-string 讓訊息更具體
-            personal_advice_list.append(f"⚠️ 安全提醒：您的資料顯示對「{allergen}」過敏，請務必避免食用答案中提到的相關料理。")
-
-    # === 組合最終回覆 ===
-    if not personal_advice_list:
-        # 如果沒有觸發任何個人化建議，就回傳基本答案和一句通用結語
-        return base_answer + "\n\n希望這個資訊對您有幫助！"
-    else:
-        # 如果有個人化建議，就把它們組合起來
-        final_response = f"基本答案：{base_answer}\n\n"
-        final_response += "--- 針對您的個人化建議 ---\n"
-        # 用換行符號連接所有建議
-        final_response += "\n".join(f"• {item}" for item in personal_advice_list)
-        return final_response
 
 # ------------------ 網頁服務路由 (Routes) ------------------
 
@@ -109,6 +117,8 @@ def generate_personalized_advice(user_query, user_profile):
 def index():
     return render_template('index.html')
 
+# (其他路由維持不變)
+# ...
 # 提供登入頁面
 @app.route('/login')
 def login_page():
@@ -139,7 +149,8 @@ def bmi_page():
 def nutrition_page():
     return send_from_directory('static', 'nutrition.html')
 
-# 問答 API 路由
+
+# 問答 API 路由 (*** 只需修改呼叫的函式 ***)
 @app.route('/ask', methods=['POST'])
 def ask():
     # --- 開始偵錯 ---
@@ -175,9 +186,10 @@ def ask():
             print("[DEBUG] 請求失敗：在 Firestore 中找不到該使用者")
             return jsonify({'answer': '錯誤：找不到您的使用者設定檔。'})
 
-        print(f"[DEBUG] 步驟 3: 準備呼叫 AI 模型產生個人化建議...")
-        answer = generate_personalized_advice(user_question, user_profile)
-        print("[DEBUG] 步驟 3: AI 模型已成功回傳答案！")
+        print(f"[DEBUG] 步驟 3: 準備呼叫 Llama 3 模型產生個人化建議...")
+        # *** 關鍵修改：呼叫新的函式 ***
+        answer = generate_llama_advice(user_question, user_profile)
+        print("[DEBUG] 步驟 3: Llama 3 模型已成功回傳答案！")
 
         print("[DEBUG] 步驟 4: 準備將最終答案傳回前端")
         return jsonify({'answer': answer})
