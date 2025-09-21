@@ -93,20 +93,16 @@
     <form id="editForm">
       <label>帳號</label>
       <input type="text" name="username" required />
-
       <label>姓名</label>
       <input type="text" name="fullname" required />
-
       <label>生日</label>
       <input type="date" name="birthdate" required />
-
       <label>性別</label>
       <select name="gender" required>
         <option value="male">男</option>
         <option value="female">女</option>
         <option value="other">其他</option>
       </select>
-
       <label>過敏原</label>
       <div class="checkbox-group">
         <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
@@ -115,14 +111,12 @@
         <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
         <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
       </div>
-
       <label>飲食習慣</label>
       <select name="diet" required>
         <option value="omnivore">一般葷食</option>
         <option value="lacto-ovo">蛋奶素</option>
         <option value="vegan">全素</option>
       </select>
-
       <label>健康目標</label>
       <select name="goal" required>
         <option value="weight-loss">減重</option>
@@ -130,7 +124,6 @@
         <option value="control-sugar">控制血糖</option>
         <option value="general-health">一般健康</option>
       </select>
-
       <button type="submit">💾 儲存個資</button>
     </form>
 
@@ -148,18 +141,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      updatePassword,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
@@ -172,12 +154,12 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
 
     const statusText = document.getElementById("status");
     const editForm = document.getElementById("editForm");
     const passwordForm = document.getElementById("passwordForm");
     let currentUser = null;
+    let idToken = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -186,23 +168,31 @@
         return;
       }
       currentUser = user;
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        editForm.username.value = data.username || "";
-        editForm.fullname.value = data.fullname || "";
-        editForm.birthdate.value = data.birthdate || "";
-        editForm.gender.value = data.gender || "";
-        editForm.diet.value = data.diet || "";
-        editForm.goal.value = data.goal || "";
-        const allergens = data.allergens || [];
+      idToken = await user.getIdToken();
+
+      // 從後端 API 取得使用者資料
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+      const data = await res.json();
+      if (data.profile) {
+        const profile = data.profile;
+        editForm.username.value = profile.username || "";
+        editForm.fullname.value = profile.fullname || "";
+        editForm.birthdate.value = profile.birthdate || "";
+        editForm.gender.value = profile.gender || "";
+        editForm.diet.value = profile.diet || "";
+        editForm.goal.value = profile.goal || "";
+        const allergens = profile.allergens || [];
         editForm.querySelectorAll('input[name="allergens"]').forEach(input => {
           input.checked = allergens.includes(input.value);
         });
       }
     });
 
+    // 提交更新資料到後端 Flask
     editForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const updatedData = {
@@ -213,16 +203,26 @@
         diet: editForm.diet.value,
         goal: editForm.goal.value,
         allergens: Array.from(editForm.querySelectorAll('input[name="allergens"]:checked')).map(cb => cb.value),
-        updatedAt: new Date().toISOString()
       };
+
       try {
-        await setDoc(doc(db, "users", currentUser.uid), updatedData, { merge: true });
-        statusText.textContent = "✅ 個人資料已更新";
+        const res = await fetch("/api/saveProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken, profile: updatedData })
+        });
+        const result = await res.json();
+        if (res.ok) {
+          statusText.textContent = "✅ 個人資料已更新";
+        } else {
+          statusText.textContent = `❌ 更新失敗：${result.error}`;
+        }
       } catch (err) {
         statusText.textContent = `❌ 更新失敗：${err.message}`;
       }
     });
 
+    // 密碼更新仍使用 Firebase Auth
     passwordForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const newPassword = document.getElementById("newPassword").value;

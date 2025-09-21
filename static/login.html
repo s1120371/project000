@@ -35,10 +35,7 @@
       flex-direction: column;
     }
 
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="date"],
+    input,
     select {
       padding: 10px 12px;
       margin-bottom: 12px;
@@ -103,7 +100,15 @@
     #status {
       text-align: center;
       margin-top: 10px;
+      font-weight: bold;
+    }
+
+    #status.error {
       color: red;
+    }
+
+    #status.success {
+      color: green;
     }
   </style>
 </head>
@@ -117,12 +122,14 @@
       <button id="tab-register">註冊</button>
     </div>
 
+    <!-- 登入表單 -->
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="Email" required />
       <input type="password" id="loginPassword" placeholder="密碼" required />
       <button type="submit">登入</button>
     </form>
 
+    <!-- 註冊表單 -->
     <form id="registerForm" class="hidden">
       <input type="text" name="username" placeholder="帳號" required />
       <input type="email" name="email" placeholder="Email" required />
@@ -180,9 +187,11 @@
     import {
       getFirestore,
       doc,
-      setDoc
+      setDoc,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
+    // Firebase 初始化
     const firebaseConfig = {
       apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
       authDomain: "project-1c574.firebaseapp.com",
@@ -197,46 +206,45 @@
     const db = getFirestore(app);
     const status = document.getElementById("status");
 
+    // 顯示狀態訊息
+    function showStatus(message, type = "error") {
+      status.textContent = message;
+      status.className = type;
+    }
+
     // 註冊
     document.getElementById("registerForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
-      const email = form.email.value;
-      const password = form.password.value;
-      const confirmPassword = form.confirm_password.value;
-      const username = form.username.value;
-      const fullname = form.fullname.value;
-      const birthdate = form.birthdate.value;
-      const gender = form.gender.value;
-      const diet = form.diet.value;
-      const goal = form.goal.value;
+      const { email, password, confirm_password, username, fullname, birthdate, gender, diet, goal } = form;
+
       const allergens = Array.from(form.querySelectorAll('input[name="allergens"]:checked')).map(cb => cb.value);
 
-      if (password !== confirmPassword) {
-        status.textContent = "❌ 密碼與確認密碼不符";
+      if (password.value !== confirm_password.value) {
+        showStatus("❌ 密碼與確認密碼不符", "error");
         return;
       }
 
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value);
         const user = userCredential.user;
 
         await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
-          fullname,
-          birthdate,
-          gender,
+          username: username.value,
+          email: email.value,
+          fullname: fullname.value,
+          birthdate: birthdate.value,
+          gender: gender.value,
           allergens,
-          diet,
-          goal,
-          createdAt: new Date().toISOString()
+          diet: diet.value,
+          goal: goal.value,
+          createdAt: serverTimestamp()
         });
 
-        status.textContent = `✅ 註冊成功，歡迎 ${fullname}`;
-        form.reset();
+        showStatus(`✅ 註冊成功，歡迎 ${fullname.value}`, "success");
+        setTimeout(() => (window.location.href = "/home"), 1500);
       } catch (err) {
-        status.textContent = `❌ 註冊失敗：${err.message}`;
+        showStatus(`❌ 註冊失敗：${err.message}`, "error");
       }
     });
 
@@ -248,19 +256,19 @@
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        // ✅ 登入成功後直接跳轉
         window.location.href = "/home";
       } catch (err) {
-        status.textContent = `❌ 登入失敗：${err.message}`;
+        showStatus(`❌ 登入失敗：${err.message}`, "error");
       }
     });
 
-    // 切換 tab
+    // Tab 切換
     document.getElementById("tab-login").addEventListener("click", () => {
       document.getElementById("loginForm").classList.remove("hidden");
       document.getElementById("registerForm").classList.add("hidden");
       document.getElementById("tab-login").classList.add("active");
       document.getElementById("tab-register").classList.remove("active");
+      status.textContent = "";
     });
 
     document.getElementById("tab-register").addEventListener("click", () => {
@@ -268,6 +276,7 @@
       document.getElementById("registerForm").classList.remove("hidden");
       document.getElementById("tab-login").classList.remove("active");
       document.getElementById("tab-register").classList.add("active");
+      status.textContent = "";
     });
   </script>
 </body>

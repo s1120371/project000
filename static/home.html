@@ -134,13 +134,9 @@
       border-left: 5px solid #2e5caa;
 
       width: 100%;
-      /* 在小螢幕下可以滿版 */
       max-width: 1000px;
-      /* ✅ 限制最大寬度 */
       margin: 0 auto;
-      /* ✅ 強制置中（保險做法） */
       text-align: left;
-      /* 文字保持靠左 */
     }
 
     .news-item:hover {
@@ -193,33 +189,6 @@
       outline: none;
       box-shadow: 0 0 0 4px rgba(46, 92, 170, 0.2);
     }
-
-
-    .news-preview h3 {
-      font-size: 2rem;
-      color: #2e5caa;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .hero h3 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-    }
-
-    .features h3 {
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-    }
-
-    .function-menu h3 {
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-      text-align: center;
-    }
   </style>
 </head>
 
@@ -239,12 +208,9 @@
   </header>
 
   <nav class="top-function-nav">
-    <!--<a href="#map">📍 地點紀錄</a>-->
     <a href="/nutrition">🍱 營養分析</a>
     <a href="/">❤️ 健康建議</a>
     <a href="/achievements">💪 我的成就</a>
-    <!--<a href="#">📊 趨勢統計</a>-->
-    <!--<a href="#">🤝 社群挑戰</a>-->
     <a href="/bmi">📐 BMI 計算</a>
   </nav>
 
@@ -268,10 +234,6 @@
     </div>
   </section>
 
-  <!--   <section class="map-preview container">
-    <h2>地圖預覽</h2>
-    <div id="map"></div>
-  </section> -->
   <section class="news-preview">
     <div class="container">
       <h3>📢 相關新聞</h3>
@@ -289,8 +251,7 @@
         <div class="news-item">
           <h4>減肥失敗真相曝光！蛋白質吃不夠才是主因</h4>
           <p>研究指出，蛋白質攝取不足會導致過度進食、熱量超標，反而變胖。減重時應確保飲食中蛋白質達15%，提升飽足感、穩定食慾，才能有效控制體重，避免高脂與高糖飲食。</p>
-          <a href="https://tw.news.yahoo.com/%E6%B8%9B%E8%82%A5%E5%A4%B1%E6%95%97%E7%9C%9F%E7%9B%B8%E6%9B%9D%E5%85%89-%E8%9B%8B%E7%99%BD%E8%B3%AA%E5%90%83%E4%B8%8D%E5%A4%A0%E6%89%8D%E6%98%AF%E4%B8%BB%E5%9B%A0-002333952.html"
-            class="news-btn">閱讀全文</a>
+          <a href="https://tw.news.yahoo.com/%E6%B8%9B%E8%82%A5%E5%A4%B1%E6%95%97%E7%9C%9F%E7%9B%B8%E6%9B%9D%E5%85%89-%E8%9B%8B%E7%99%BD%E8%B3%AA%E5%90%83%E4%B8%8D%E5%A4%A0%E6%89%8D%E6%98%AF%E4%B8%BB%E5%9B%A0-002333952.html" class="news-btn">閱讀全文</a>
         </div>
       </div>
     </div>
@@ -299,86 +260,83 @@
     </footer>
 
     <!-- Firebase 認證 + Firestore -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-      import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-      import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
-        authDomain: "project-1c574.firebaseapp.com",
-        projectId: "project-1c574",
-        storageBucket: "project-1c574.appspot.com",
-        messagingSenderId: "88492956577",
-        appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
-      };
+  const firebaseConfig = {
+    apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+    authDomain: "project-1c574.firebaseapp.com",
+    projectId: "project-1c574",
+    storageBucket: "project-1c574.appspot.com",
+    messagingSenderId: "88492956577",
+    appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+  };
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-      const userIdentity = document.getElementById("user-identity");
-      const authLinks = document.getElementById("auth-links");
-      const loginLinks = document.getElementById("login-links");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const welcomeTitle = document.getElementById("welcome-title");
-      const userInfoBox = document.getElementById("userInfo");
+  const userIdentity = document.getElementById("user-identity");
+  const authLinks = document.getElementById("auth-links");
+  const loginLinks = document.getElementById("login-links");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const welcomeTitle = document.getElementById("welcome-title");
+  const userInfoBox = document.getElementById("userInfo");
 
-      onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-          userIdentity.textContent = "";
-          authLinks.style.display = "none";
-          loginLinks.style.display = "inline";
-          welcomeTitle.textContent = "尚未登入，將導向登入頁...";
-          setTimeout(() => window.location.href = "/login", 2000);
-          return;
-        }
-
-        authLinks.style.display = "inline";
-        loginLinks.style.display = "none";
-
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-
-          // 👇 歡迎語與右上角名稱都顯示 username（找不到就 fallback 成 email）
-          const username = data.username;
-          welcomeTitle.textContent = `👋 歡迎回來，${username}`;
-          userIdentity.textContent = username;
-
-          userInfoBox.style.display = "block";
-          document.getElementById("username").textContent = data.username || "未填寫";
-          document.getElementById("fullname").textContent = data.fullname || "未填寫";
-          document.getElementById("gender").textContent = data.gender || "未填寫";
-          document.getElementById("birthdate").textContent = data.birthdate || "未填寫";
-          document.getElementById("diet").textContent = data.diet || "未填寫";
-          document.getElementById("goal").textContent = data.goal || "未填寫";
-          document.getElementById("allergens").textContent = (data.allergens || []).join(", ") || "無";
-        } else {
-          userInfoBox.innerHTML = "<p>⚠️ 尚未填寫個人資料</p>";
-        }
-      });
-
-      logoutBtn?.addEventListener("click", async () => {
-        await signOut(auth);
-        window.location.href = "/login";
-      });
-    </script>
-
-    <!-- Google Map -->
-    <!--   <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
-  <script>
-    function initMap() {
-      const defaultLocation = { lat: 25.0330, lng: 121.5654 }; // 台北市
-      const map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 12,
-        center: defaultLocation,
-      });
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "/login";
+      return;
     }
-  </script> -->
+
+    authLinks.style.display = "inline";
+    loginLinks.style.display = "none";
+
+    // 🔑 取得 ID Token
+    const idToken = await user.getIdToken();
+
+    try {
+      // 🚀 呼叫 Flask API /api/profile
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken })
+      });
+
+      const result = await res.json();
+      if (result.error) {
+        userInfoBox.style.display = "block";
+        userInfoBox.innerHTML = `<p>⚠️ ${result.error}</p>`;
+        return;
+      }
+
+      const data = result.profile;
+      const username = data.username || user.email;
+
+      welcomeTitle.textContent = `👋 歡迎回來，${username}`;
+      userIdentity.textContent = username;
+
+      userInfoBox.style.display = "block";
+      document.getElementById("username").textContent = data.username || "未填寫";
+      document.getElementById("fullname").textContent = data.fullname || "未填寫";
+      document.getElementById("gender").textContent = data.gender || "未填寫";
+      document.getElementById("birthdate").textContent = data.birthdate || "未填寫";
+      document.getElementById("diet").textContent = data.diet || "未填寫";
+      document.getElementById("goal").textContent = data.goal || "未填寫";
+      document.getElementById("allergens").textContent = (data.allergens || []).join(", ") || "無";
+    } catch (err) {
+      console.error("❌ API 呼叫失敗:", err);
+      userInfoBox.style.display = "block";
+      userInfoBox.innerHTML = "<p>⚠️ 無法載入使用者資料，請稍後再試。</p>";
+    }
+  });
+
+  logoutBtn?.addEventListener("click", async () => {
+    await signOut(auth);
+    window.location.href = "/login";
+  });
+</script>
+
+
 </body>
-
-
 </html>
