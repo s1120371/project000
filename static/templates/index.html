@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康飲食問答AI</title>
+    <style>
+        /* 您的 CSS 樣式維持不變 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+
+        #header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        #chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #input-area {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        #send-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #45a049;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #e1f5fe;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background-color: #f1f1f1;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat-container">
+        <div id="header">
+            <h2>健康飲食問答 AI</h2>
+            <p id="auth-status" style="font-size: 0.8em; margin-top: 5px;">正在檢查登入狀態...</p>
+        </div>
+        <div id="chat-box">
+            <div class="message ai-message">哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="在這裡輸入你的問題...">
+            <button id="send-btn">➤</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        // 您的 Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
+            authDomain: "project-1c574.firebaseapp.com",
+            projectId: "project-1c574",
+            storageBucket: "project-1c574.appspot.com",
+            messagingSenderId: "88492956577",
+            appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const authStatus = document.getElementById('auth-status');
+        let currentUser = null;
+
+        // 監聽使用者登入狀態
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // 使用者已登入
+                currentUser = user;
+                authStatus.textContent = `已登入：${user.email}`;
+                sendBtn.disabled = false;
+                userInput.disabled = false;
+            } else {
+                // 使用者未登入
+                currentUser = null;
+                authStatus.textContent = "⚠ 您尚未登入，請先前往主頁登入！";
+                sendBtn.disabled = true;
+                userInput.disabled = true;
+                appendMessage('請先登入才能使用個人化問答功能。', 'ai');
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') sendMessage();
+        });
+
+        async function sendMessage() {
+            // 確認使用者已登入
+            if (!currentUser) {
+                alert("請先登入！");
+                return;
+            }
+
+            const question = userInput.value.trim();
+            if (question === '') return;
+
+            appendMessage(question, 'user');
+            userInput.value = '';
+
+            const thinkingMessage = appendMessage('AI 思考中...', 'ai');
+
+            try {
+                // *** 關鍵：取得使用者的 ID Token ***
+                const idToken = await currentUser.getIdToken();
+
+                // 將問題和 Token 一起發送到後端
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // *** 在 body 中同時包含問題和 idToken ***
+                    body: JSON.stringify({
+                        question: question,
+                        idToken: idToken
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.answer || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                thinkingMessage.innerText = data.answer;
+
+            } catch (error) {
+                console.error('Error:', error);
+                thinkingMessage.innerText = `糟糕，發生錯誤：${error.message}`;
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender + '-message');
+            // 將換行符 \n 轉換為 <br> 標籤，以便在 HTML 中正確顯示換行
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return messageDiv;
+        }
+    </script>
+</body>
+
+</html>
