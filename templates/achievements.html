@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💪 我的成就｜健康管家</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --green: #4caf50;
+      --green-dark: #2e7d32;
+      --blue: #2e5caa;
+      --red: #e53935;
+      --bg: #f4f6f9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background-color: var(--bg);
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--green-dark);
+      margin-bottom: 15px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e6e9ef;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(30, 60, 90, .06);
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+
+    input[type="number"],
+    input[type="date"] {
+      padding: 12px 14px;
+      margin-top: 6px;
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #cfd7e3;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input[type="number"]:focus,
+    input[type="date"]:focus {
+      border-color: #8bc34a;
+      box-shadow: 0 0 0 4px rgba(139, 195, 74, .15);
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: var(--green);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .08s, box-shadow .2s, background-color .3s;
+      box-shadow: 0 6px 12px rgba(76, 175, 80, .25);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--green);
+      border: 1.5px solid var(--green);
+      box-shadow: 0 4px 10px rgba(76, 175, 80, .12);
+    }
+
+    .btn-secondary:hover {
+      background: #e8f5e9;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #e8f5e9;
+      color: var(--green-dark);
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #c8e6c9;
+    }
+
+    .progress {
+      width: 100%;
+      height: 14px;
+      background: #edf2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green) 0%, #6fd07a 100%);
+      transition: width .3s ease;
+    }
+
+    .quick-keys {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .key {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #dde3ee;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: .2px;
+      box-shadow: 0 6px 14px rgba(20, 40, 70, .08);
+    }
+
+    .key:hover {
+      background: #f7f9ff;
+    }
+
+    .key.positive {
+      border-color: #c8e6c9;
+      color: #1c38b7;
+      background: linear-gradient(180deg, #ffffff 0%, #f3fbf5 100%);
+    }
+
+    .key.negative {
+      border-color: #f5c6c6;
+      color: #b71c1c;
+      background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+    }
+
+    .key[data-type="water"]::before {
+      content: "💧";
+      margin-right: 6px;
+    }
+
+    .key[data-type="ex"]::before {
+      content: "🏃";
+      margin-right: 6px;
+    }
+
+    .custom-input {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .custom-input input {
+      padding: 10px 12px;
+      border: 1px solid #cfd7e3;
+      border-radius: 10px;
+      width: 140px;
+    }
+
+    .custom-input input:focus {
+      border-color: #8bc34a;
+      box-shadow: 0 0 0 4px rgba(139, 195, 74, .12);
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .06);
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #eef1f7;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background: #f5faf6;
+      color: #355e3b;
+      font-weight: 800;
+    }
+
+    tr:nth-child(even) {
+      background: #fafcfe;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f9ff;
+      color: #1f3e7a;
+      padding: 8px 12px;
+      border: 1px solid #cfe0ff;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .badge.lock {
+      opacity: .5;
+      filter: grayscale(100%);
+    }
+
+    #backButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #2196f3;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 800;
+      box-shadow: 0 6px 14px rgba(33, 150, 243, .25);
+    }
+
+    #backButton:hover {
+      background: #1976d2;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    @media (min-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .spacer-24 {
+      margin-top: 24px;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="/home" id="backButton">🔙 返回主畫面</a>
+  <h2>💪 我的成就</h2>
+  <p style="margin-bottom:10px;color:#555">點擊快速鍵或輸入自訂數值來記錄飲水與運動，達成目標自動解鎖徽章！</p>
+  <section class="card">
+    <div class="row" style="justify-content: space-between;">
+      <div class="row">
+        <span class="pill">今天：<span id="today"></span></span>
+        <span class="pill">帳號：<span id="who"></span></span>
+      </div>
+      <div class="row">
+        <div><label>飲水目標(ml)</label><input type="number" id="goalWater" min="500" step="100" value="2000" /></div>
+        <div><label>運動目標(分鐘)</label><input type="number" id="goalExercise" min="10" step="5" value="30" /></div>
+        <button class="btn-secondary" id="saveGoals">儲存目標</button>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card" style="margin:0;">
+        <h3 style="margin-top:0;">🥤 今日飲水</h3>
+        <div class="row"><strong>已喝</strong>
+          <div id="waterNow" style="font-weight:700;">0</div>
+          <div>ml</div>
+        </div>
+        <div class="progress" style="margin:10px 0 6px;">
+          <div id="waterBar" class="bar"></div>
+        </div>
+        <div class="row" style="justify-content: space-between;">
+          <small>目標：<span id="waterGoalText">2000</span> ml</small><small><span id="waterPct">0%</span></small>
+        </div>
+        <div class="quick-keys">
+          <button class="key positive" data-type="water" data-water="200">+200 ml</button>
+          <button class="key positive" data-type="water" data-water="350">+350 ml</button>
+          <button class="key positive" data-type="water" data-water="500">+500 ml</button>
+          <button class="key negative" data-type="water" data-water="-200">-200 ml</button>
+        </div>
+        <div class="custom-input">
+          <input type="number" id="customWater" placeholder="自訂 ml" min="1" /><button id="addCustomWater"
+            class="btn-secondary">新增飲水</button>
+        </div>
+      </div>
+      <div class="card" style="margin:0;">
+        <h3 style="margin-top:0;">🏃‍♀️ 今日運動</h3>
+        <div class="row"><strong>已運動</strong>
+          <div id="exNow" style="font-weight:700;">0</div>
+          <div>分鐘</div>
+        </div>
+        <div class="progress" style="margin:10px 0 6px;">
+          <div id="exBar" class="bar"></div>
+        </div>
+        <div class="row" style="justify-content: space-between;">
+          <small>目標：<span id="exGoalText">30</span> 分</small><small><span id="exPct">0%</span></small>
+        </div>
+        <div class="quick-keys">
+          <button class="key positive" data-type="ex" data-ex="10">+10 分</button>
+          <button class="key positive" data-type="ex" data-ex="20">+20 分</button>
+          <button class="key positive" data-type="ex" data-ex="30">+30 分</button>
+          <button class="key negative" data-type="ex" data-ex="-10">-10 分</button>
+        </div>
+        <div class="custom-input">
+          <input type="number" id="customEx" placeholder="自訂分鐘" min="1" /><button id="addCustomEx"
+            class="btn-secondary">新增運動</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <h3 style="margin:0 0 10px;">🏅 今日徽章</h3>
+    <div id="badges" class="row" style="gap:10px;"></div>
+  </section>
+  <div class="spacer-24"></div>
+  <section class="grid grid-2">
+    <div class="card">
+      <h3 style="margin:0 0 10px;">📈 近七天趨勢</h3><canvas id="trendChart" height="120"></canvas>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px;">🗓️ 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
+    </div>
+  </section>
+  <div class="spacer-24"></div>
+  <section class="card">
+    <h3 style="margin:0 0 10px;">🧾 歷史記錄</h3>
+    <div style="overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>飲水 (ml)</th>
+            <th>運動 (分鐘)</th>
+            <th>更新時間</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // --- DOM refs and Global State ---
+    const who = document.getElementById('who');
+    const todayEl = document.getElementById('today');
+    const datePicker = document.getElementById('datePicker');
+    const waterNow = document.getElementById('waterNow'), waterBar = document.getElementById('waterBar'), waterGoalText = document.getElementById('waterGoalText'), waterPct = document.getElementById('waterPct');
+    const exNow = document.getElementById('exNow'), exBar = document.getElementById('exBar'), exGoalText = document.getElementById('exGoalText'), exPct = document.getElementById('exPct');
+    const goalWaterInput = document.getElementById('goalWater'), goalExInput = document.getElementById('goalExercise'), saveGoalsBtn = document.getElementById('saveGoals');
+    const badgesBox = document.getElementById('badges'), historyBody = document.getElementById('historyBody');
+
+    let idToken = null;
+    let chartInstance = null;
+    let clickLocked = false;
+
+    const fmtDate = (d) => d.toISOString().slice(0, 10);
+    const todayStr = fmtDate(new Date());
+    todayEl.textContent = todayStr;
+    if (datePicker) datePicker.value = todayStr;
+
+    // --- API Helper ---
+    async function apiFetch(endpoint, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      const response = await fetch(endpoint, { ...options, headers });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+      }
+      // 如果是 204 No Content (例如 DELETE 成功)，就沒有 .json() 可以呼叫
+      if (response.status === 204 || response.status === 201 && response.headers.get('content-length') === '0') {
+        return null;
+      }
+      return response.json();
+    }
+
+    // --- Goals Logic ---
+    async function loadGoals() {
+      try {
+        const goals = await apiFetch('/api/achievement-goals');
+        goalWaterInput.value = goals.goalWater;
+        goalExInput.value = goals.goalExercise;
+        waterGoalText.textContent = goals.goalWater;
+        exGoalText.textContent = goals.goalExercise;
+      } catch (error) {
+        console.error("Failed to load goals:", error);
+      }
+    }
+
+    saveGoalsBtn.addEventListener('click', async () => {
+      const goalWater = Math.max(500, Number(goalWaterInput.value) || 2000);
+      const goalExercise = Math.max(10, Number(goalExInput.value) || 30);
+      try {
+        await apiFetch('/api/achievement-goals', {
+          method: 'POST',
+          body: JSON.stringify({ goalWater, goalExercise })
+        });
+        waterGoalText.textContent = goalWater;
+        exGoalText.textContent = goalExercise;
+        await loadDay(datePicker.value);
+        await loadRecent();
+        await loadHistory();
+        alert('✅ 目標已更新');
+      } catch (error) {
+        alert(`❌ 更新目標失敗: ${error.message}`);
+      }
+    });
+
+    // --- Record Update Logic ---
+    async function updateRecord(dateStr, { addWater = 0, addExercise = 0 }) {
+      if (clickLocked) return;
+      clickLocked = true;
+      setTimeout(() => clickLocked = false, 500);
+
+      try {
+        await apiFetch(`/api/achievement-records/${dateStr}`, {
+          method: 'POST',
+          body: JSON.stringify({ addWater, addExercise })
+        });
+        // 異步刷新所有相關的 UI 元件
+        await Promise.all([
+          loadDay(dateStr),
+          evaluateBadges(),
+          loadRecent(),
+          loadHistory()
+        ]);
+      } catch (error) {
+        console.error("Failed to update record:", error);
+        alert(`❌ 更新紀錄失敗: ${error.message}`);
+      }
+    }
+
+    // --- Event Listeners for Quick Keys and Custom Inputs ---
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.classList.contains('key')) {
+        const dw = Number(t.dataset.water) || 0;
+        const de = Number(t.dataset.ex) || 0;
+        updateRecord(datePicker.value, { addWater: dw, addExercise: de });
+      }
+    });
+
+    document.getElementById('addCustomWater').addEventListener('click', () => {
+      const input = document.getElementById('customWater');
+      const val = Number(input.value);
+      if (val) updateRecord(datePicker.value, { addWater: val });
+      input.value = '';
+    });
+
+    document.getElementById('addCustomEx').addEventListener('click', () => {
+      const input = document.getElementById('customEx');
+      const val = Number(input.value);
+      if (val) updateRecord(datePicker.value, { addExercise: val });
+      input.value = '';
+    });
+
+    // --- UI Loading and Rendering ---
+    async function loadDay(dateStr) {
+      try {
+        const record = await apiFetch(`/api/achievement-records/${dateStr}`);
+        const gw = Number(goalWaterInput.value);
+        const ge = Number(goalExInput.value);
+
+        const water = record.waterMl || 0, ex = record.exerciseMin || 0;
+        waterNow.textContent = water;
+        exNow.textContent = ex;
+
+        const wPct = Math.min(100, Math.round((water / gw) * 100));
+        const ePct = Math.min(100, Math.round((ex / ge) * 100));
+        waterPct.textContent = `${wPct}%`;
+        exPct.textContent = `${ePct}%`;
+        waterBar.style.width = `${wPct}%`;
+        exBar.style.width = `${ePct}%`;
+      } catch (error) {
+        console.error(`Failed to load day ${dateStr}:`, error);
+      }
+    }
+
+    async function loadRecent() {
+      try {
+        const records = await apiFetch('/api/achievement-history?limit=7');
+        records.reverse(); // API 回傳是降冪，圖表需要升冪
+        const labels = records.map(r => r.id.slice(5));
+        const waterData = records.map(r => r.waterMl || 0);
+        const exData = records.map(r => r.exerciseMin || 0);
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
+              { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
+            ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      } catch (error) {
+        console.error("Failed to load recent data for chart:", error);
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const records = await apiFetch('/api/achievement-history?limit=30');
+        historyBody.innerHTML = records.map(v => {
+          const updated = v.updatedAt ? new Date(v.updatedAt._seconds * 1000).toLocaleString() : 'N/A';
+          return `
+                    <tr>
+                        <td>${v.id}</td>
+                        <td>${v.waterMl || 0}</td>
+                        <td>${v.exerciseMin || 0}</td>
+                        <td>${updated}</td>
+                        <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
+                    </tr>`;
+        }).join('');
+      } catch (error) {
+        console.error("Failed to load history:", error);
+      }
+    }
+
+    historyBody.addEventListener('click', async (e) => {
+      const t = e.target;
+      if (t.classList.contains('delete-btn') && t.dataset.id) {
+        if (!confirm('確定刪除該日期記錄？')) return;
+        try {
+          await apiFetch(`/api/achievement-records/${t.dataset.id}`, { method: 'DELETE' });
+          await loadHistory();
+          await loadRecent();
+          await loadDay(datePicker.value);
+        } catch (error) {
+          alert(`❌ 刪除失敗: ${error.message}`);
+        }
+      }
+    });
+
+    // --- Badges Logic ---
+    const BADGES_CONFIG = {
+      'water_2l_day': { name: '水分達標', icon: '💧' },
+      'exercise_30m_day': { name: '動一動', icon: '🏃' },
+      'double_goal_day': { name: '雙達標', icon: '🥇' },
+      'streak_3': { name: '連續3天', icon: '🔥' }
+    };
+
+    async function loadBadges() {
+      try {
+        const unlockedBadges = await apiFetch('/api/badges');
+        badgesBox.innerHTML = Object.entries(BADGES_CONFIG).map(([id, config]) => {
+          const owned = unlockedBadges[id] && unlockedBadges[id].unlocked;
+          return `<div class="badge ${owned ? '' : 'lock'}" title="${config.name}">${config.icon}<span>${config.name}</span></div>`;
+        }).join('');
+      } catch (error) {
+        console.error("Failed to load badges:", error);
+      }
+    }
+
+    async function evaluateBadges() {
+      try {
+        await apiFetch('/api/badges', {
+          method: 'POST',
+          body: JSON.stringify({ date: datePicker.value })
+        });
+        await loadBadges();
+      } catch (error) {
+        console.error("Failed to evaluate badges:", error);
+      }
+    }
+
+    // --- Date Picker and Initialization ---
+    datePicker.addEventListener('change', () => {
+      loadDay(datePicker.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      idToken = sessionStorage.getItem('firebaseIdToken');
+      if (!idToken) {
+        alert('請先登入');
+        location.href = '/login';
+        return;
+      }
+
+      try {
+        // 從後端獲取 user profile 來取得 email
+        const profile = await apiFetch('/api/user-profile');
+        who.textContent = profile.email || '已登入';
+      } catch (e) {
+        who.textContent = '已登入';
+      }
+
+      // 平行載入所有需要的資料
+      await Promise.all([
+        loadGoals(),
+        loadDay(datePicker.value),
+        loadRecent(),
+        loadBadges(),
+        loadHistory()
+      ]);
+    });
+  </script>
+</body>
+
+</html>

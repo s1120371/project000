@@ -110,44 +110,38 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-
-        // 您的 Firebase 設定
-        const firebaseConfig = {
-            apiKey: "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4",
-            authDomain: "project-1c574.firebaseapp.com",
-            projectId: "project-1c574",
-            storageBucket: "project-1c574.appspot.com",
-            messagingSenderId: "88492956577",
-            appId: "1:88492956577:web:d7e5bf270544d34ebc09e0"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
+    <script>
+        // 不再需要 import 任何 firebase 的東西了
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const authStatus = document.getElementById('auth-status');
-        let currentUser = null;
 
-        // 監聽使用者登入狀態
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // 使用者已登入
-                currentUser = user;
-                authStatus.textContent = `已登入：${user.email}`;
+        // --- 頁面載入時檢查 sessionStorage ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const idToken = sessionStorage.getItem('firebaseIdToken');
+            if (idToken) {
+                // 為了更好的使用者體驗，可以再打一次 API 取得 email
+                try {
+                    const response = await fetch('/api/user-profile', {
+                        headers: { 'Authorization': `Bearer ${idToken}` }
+                    });
+                    if (response.ok) {
+                        const profile = await response.json();
+                        authStatus.textContent = `已登入：${profile.email}`;
+                    } else {
+                        authStatus.textContent = '已登入 (驗證資訊可能已過期)';
+                    }
+                } catch (e) {
+                    authStatus.textContent = '已登入';
+                }
                 sendBtn.disabled = false;
                 userInput.disabled = false;
             } else {
-                // 使用者未登入
-                currentUser = null;
                 authStatus.textContent = "⚠ 您尚未登入，請先前往主頁登入！";
                 sendBtn.disabled = true;
                 userInput.disabled = true;
-                appendMessage('請先登入才能使用個人化問答功能。', 'ai');
+                appendMessage('請先<a href="/login">登入</a>才能使用個人化問答功能。', 'ai');
             }
         });
 
@@ -157,9 +151,11 @@
         });
 
         async function sendMessage() {
-            // 確認使用者已登入
-            if (!currentUser) {
-                alert("請先登入！");
+            // 從 sessionStorage 獲取 token
+            const idToken = sessionStorage.getItem('firebaseIdToken');
+            if (!idToken) {
+                alert("驗證資訊已失效，請重新登入！");
+                window.location.href = '/login';
                 return;
             }
 
@@ -172,19 +168,16 @@
             const thinkingMessage = appendMessage('AI 思考中...', 'ai');
 
             try {
-                // *** 關鍵：取得使用者的 ID Token ***
-                const idToken = await currentUser.getIdToken();
-
-                // 將問題和 Token 一起發送到後端
+                // *** 關鍵修改：將 Token 放在 Authorization Header 中 ***
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
                     },
-                    // *** 在 body 中同時包含問題和 idToken ***
+                    // *** body 中不再需要 idToken ***
                     body: JSON.stringify({
-                        question: question,
-                        idToken: idToken
+                        question: question
                     })
                 });
 
@@ -194,7 +187,8 @@
                 }
 
                 const data = await response.json();
-                thinkingMessage.innerText = data.answer;
+                // 使用 innerHTML 才能正確渲染換行符 <br>
+                thinkingMessage.innerHTML = data.answer.replace(/\n/g, '<br>');
 
             } catch (error) {
                 console.error('Error:', error);
@@ -205,7 +199,6 @@
         function appendMessage(text, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', sender + '-message');
-            // 將換行符 \n 轉換為 <br> 標籤，以便在 HTML 中正確顯示換行
             messageDiv.innerHTML = text.replace(/\n/g, '<br>');
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
