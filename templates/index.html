@@ -92,10 +92,29 @@
             background-color: #f1f1f1;
             align-self: flex-start;
         }
+
+        #backButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #2196f3;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        #backButton:hover {
+            background-color: #1976d2;
+        }
     </style>
 </head>
 
 <body>
+    <a href="/home" id="backButton">🔙 返回主畫面</a>
     <div id="chat-container">
         <div id="header">
             <h2>健康飲食問答 AI</h2>
@@ -111,7 +130,7 @@
     </div>
 
     <script>
-        // 不再需要 import 任何 firebase 的東西了
+        // 不再需要 import  firebase 
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
