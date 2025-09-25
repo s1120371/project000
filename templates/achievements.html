@@ -358,7 +358,7 @@
             <th>日期</th>
             <th>飲水 (ml)</th>
             <th>運動 (分鐘)</th>
-            <th>更新時間</th>
+            <th>最後更新時間</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -450,7 +450,7 @@
         // 異步刷新所有相關的 UI 元件
         await Promise.all([
           loadDay(dateStr),
-          evaluateBadges(),
+          evaluateBadges(dateStr),
           loadRecent(),
           loadHistory()
         ]);
@@ -536,15 +536,15 @@
       try {
         const records = await apiFetch('/api/achievement-history?limit=30');
         historyBody.innerHTML = records.map(v => {
-          const updated = v.updatedAt ? new Date(v.updatedAt._seconds * 1000).toLocaleString() : 'N/A';
+          const updated = v.updatedAt ? new Date(v.updatedAt).toLocaleString() : 'N/A'; // 格式化時間戳
           return `
-                    <tr>
-                        <td>${v.id}</td>
-                        <td>${v.waterMl || 0}</td>
-                        <td>${v.exerciseMin || 0}</td>
-                        <td>${updated}</td>
-                        <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
-                    </tr>`;
+            <tr>
+              <td>${v.id}</td>
+              <td>${v.waterMl || 0}</td>
+              <td>${v.exerciseMin || 0}</td>
+              <td>${updated}</td>
+              <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
+            </tr>`;
         }).join('');
       } catch (error) {
         console.error("Failed to load history:", error);
@@ -554,7 +554,7 @@
     historyBody.addEventListener('click', async (e) => {
       const t = e.target;
       if (t.classList.contains('delete-btn') && t.dataset.id) {
-        if (!confirm('確定刪除該日期記錄？')) return;
+        if (!confirm('確定刪除該記錄？')) return;
         try {
           await apiFetch(`/api/achievement-records/${t.dataset.id}`, { method: 'DELETE' });
           await loadHistory();
@@ -586,12 +586,46 @@
       }
     }
 
-    async function evaluateBadges() {
+    async function evaluateBadges(dateStr) {
       try {
+        const record = await apiFetch(`/api/achievement-records/${dateStr}`);
+        const waterGoal = Number(goalWaterInput.value);
+        const exerciseGoal = Number(goalExInput.value);
+
+        const water = record.waterMl || 0;
+        const exercise = record.exerciseMin || 0;
+
+        const badges = {};
+
+        // 檢查水分達標
+        if (water >= waterGoal) {
+          badges['water_2l_day'] = true;
+        }
+
+        // 檢查運動達標
+        if (exercise >= exerciseGoal) {
+          badges['exercise_30m_day'] = true;
+        }
+
+        // 檢查雙達標
+        if (water >= waterGoal && exercise >= exerciseGoal) {
+          badges['double_goal_day'] = true;
+        }
+
+        // 檢查連續3天徽章
+        const recentRecords = await apiFetch('/api/achievement-history?limit=3');
+        const streak = recentRecords.every(record => record.waterMl >= waterGoal && record.exerciseMin >= exerciseGoal);
+        if (streak) {
+          badges['streak_3'] = true;
+        }
+
+        // 更新徽章狀態
         await apiFetch('/api/badges', {
           method: 'POST',
-          body: JSON.stringify({ date: datePicker.value })
+          body: JSON.stringify(badges),
         });
+
+        // 重新加載徽章
         await loadBadges();
       } catch (error) {
         console.error("Failed to evaluate badges:", error);
