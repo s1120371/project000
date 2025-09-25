@@ -1,4 +1,4 @@
-# app.py (支援所有前端 API 的最終版本)
+# app.py (支援所有前端 API 的最終版本 - 已修正 Token 驗證與 Email 回傳問題)
 
 from flask import Flask, request, jsonify, send_from_directory
 import firebase_admin
@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 # ------------------ 初始化設定 ------------------
 app = Flask(__name__, static_folder='templates', static_url_path='')
 
+# 確保 serviceAccountKey.json 檔案存在
+if not os.path.exists('serviceAccountKey.json'):
+    print("錯誤：找不到 'serviceAccountKey.json' 檔案！")
+    exit()
+    
 cred = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -28,15 +33,15 @@ print(f"GGUF AI 模型 '{model_filename}' 載入完成！")
 # 請確保這個金鑰是您 Firebase 專案的 Web API Key
 FIREBASE_WEB_API_KEY = "AIzaSyCCNPhST7sScxFdSZJ6-NbxKgqrSYOzes4"
 
-# ------------------ 輔助函式：驗證 Token ------------------
+# ------------------ 輔助函式：驗證 Token (已修改) ------------------
 def verify_token(request):
-    """從請求標頭中驗證 idToken 並返回 uid"""
+    """從請求標頭中驗證 idToken 並返回整個解碼後的 token 物件"""
     id_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
     if not id_token:
         return None, (jsonify({'error': '缺少驗證資訊'}), 401)
     try:
         decoded_token = auth.verify_id_token(id_token)
-        return decoded_token['uid'], None
+        return decoded_token, None # <-- 改成回傳整個 decoded_token
     except Exception as e:
         return None, (jsonify({'error': f'Token 無效或過期: {e}'}), 401)
 
@@ -128,8 +133,9 @@ def api_login():
 # --- 問答 API (已修正為新驗證方式) ---
 @app.route('/ask', methods=['POST'])
 def ask():
-    uid, error = verify_token(request) # 使用新的驗證函式
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
     
     user_data = request.json
     user_question = user_data.get('question')
@@ -144,26 +150,36 @@ def ask():
     except Exception as e:
         return jsonify({'answer': f'伺服器發生未預期的錯誤: {str(e)}'}), 500
 
-# --- 使用者資料 API ---
+# --- 使用者資料 API (已修正為新驗證方式並確保回傳 email) ---
 @app.route('/api/user-profile', methods=['GET', 'POST'])
 def user_profile():
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
     user_ref = db.collection('users').document(uid)
+
     if request.method == 'GET':
         user_doc = user_ref.get()
-        return jsonify(user_doc.to_dict()) if user_doc.exists else ({'error': '找不到使用者資料'}, 404)
+        profile_data = user_doc.to_dict() if user_doc.exists else {}
+        
+        # 關鍵修正：將 token 中的 email 附加到回傳資料中，確保前端一定能取到
+        profile_data['email'] = decoded_token.get('email', '') 
+        
+        return jsonify(profile_data)
+        
     if request.method == 'POST':
         update_data = request.json
         update_data['updatedAt'] = firestore.SERVER_TIMESTAMP
         user_ref.set(update_data, merge=True)
         return jsonify({'message': '資料更新成功'}), 200
 
-# --- 修改密碼 API ---
+# --- 修改密碼 API (已修正為新驗證方式) ---
 @app.route('/api/update-password', methods=['POST'])
 def update_password():
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     new_password = request.json.get('password')
     if not new_password or len(new_password) < 6:
         return jsonify({'error': '密碼格式不符 (至少6位數)'}), 400
@@ -172,11 +188,13 @@ def update_password():
         return jsonify({'message': '密碼更新成功'}), 200
     except Exception as e: return jsonify({'error': f'密碼更新失敗: {str(e)}'}), 500
 
-# --- BMI 紀錄 API ---
+# --- BMI 紀錄 API (已修正為新驗證方式) ---
 @app.route('/api/bmi-records', methods=['GET', 'POST'])
 def bmi_records():
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     records_ref = db.collection('users').document(uid).collection('bmiRecords')
     if request.method == 'GET':
         docs = records_ref.order_by("date", direction=Query.DESCENDING).order_by("time", direction=Query.DESCENDING).stream()
@@ -189,18 +207,22 @@ def bmi_records():
 
 @app.route('/api/bmi-records/<record_id>', methods=['DELETE'])
 def delete_bmi_record(record_id):
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     try:
         db.collection('users').document(uid).collection('bmiRecords').document(record_id).delete()
         return jsonify({'message': '紀錄已刪除'}), 200
     except Exception as e: return jsonify({'error': f'刪除失敗: {str(e)}'}), 500
 
-# --- 成就系統 API ---
+# --- 成就系統 API (已修正為新驗證方式) ---
 @app.route('/api/achievement-goals', methods=['GET', 'POST'])
 def achievement_goals():
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     user_ref = db.collection('users').document(uid)
     if request.method == 'GET':
         user_doc = user_ref.get()
@@ -217,8 +239,10 @@ def achievement_goals():
 
 @app.route('/api/achievement-records/<date_str>', methods=['GET', 'POST', 'DELETE'])
 def achievement_record_by_date(date_str):
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     record_ref = db.collection('users').document(uid).collection('achievementRecords').document(date_str)
     if request.method == 'GET':
         doc = record_ref.get()
@@ -241,45 +265,46 @@ def achievement_record_by_date(date_str):
 
 @app.route('/api/achievement-history', methods=['GET'])
 def get_achievement_history():
-    uid, error = verify_token(request)
+    decoded_token, error = verify_token(request)
     if error: return error
+    uid = decoded_token['uid']
+    
     limit = int(request.args.get('limit', 7))
     docs = db.collection('users').document(uid).collection('achievementRecords').order_by("date", direction=Query.DESCENDING).limit(limit).stream()
     return jsonify([{'id': doc.id, **doc.to_dict()} for doc in docs]), 200
 
 @app.route('/api/badges', methods=['GET', 'POST'])
 def handle_badges():
-    uid, error = verify_token(request)
-    if error:
-        return error
+    decoded_token, error = verify_token(request)
+    if error: return error
+    uid = decoded_token['uid']
+    
     badges_ref = db.collection('users').document(uid).collection('badges')
     
     if request.method == 'GET':
         return jsonify({doc.id: doc.to_dict() for doc in badges_ref.stream()})
     
     if request.method == 'POST':
-        # 取得使用者資料與目標
         user_doc = db.collection('users').document(uid).get()
-        user_data, gw, ge = user_doc.to_dict(), user_doc.to_dict().get('goalWater', 2000), user_doc.to_dict().get('goalExercise', 30)
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+            
+        user_data = user_doc.to_dict()
+        gw = user_data.get('goalWater', 2000)
+        ge = user_data.get('goalExercise', 30)
         
-        # 取得今天的紀錄
         date_str = request.json.get('date', datetime.now().strftime('%Y-%m-%d'))
         today_rec_doc = db.collection('users').document(uid).collection('achievementRecords').document(date_str).get()
         
-        # 初始化徽章的解鎖狀態
-        water_ok = False
-        ex_ok = False
-        
+        water_ok, ex_ok = False, False
         if today_rec_doc.exists:
             rec = today_rec_doc.to_dict()
             water_ok, ex_ok = rec.get('waterMl', 0) >= gw, rec.get('exerciseMin', 0) >= ge
         
-        # 根據達標情況設置徽章，若未達標則設置為 False
         badges_ref.document('water_2l_day').set({'unlocked': water_ok, 'at': date_str}, merge=True)
         badges_ref.document('exercise_30m_day').set({'unlocked': ex_ok, 'at': date_str}, merge=True)
         badges_ref.document('double_goal_day').set({'unlocked': (water_ok and ex_ok), 'at': date_str}, merge=True)
         
-        # 檢查是否有達到連續 3 天達標
         streak_ok = True
         for i in range(3):
             key = (datetime.strptime(date_str, '%Y-%m-%d') - timedelta(days=i)).strftime('%Y-%m-%d')
@@ -288,12 +313,10 @@ def handle_badges():
                 streak_ok = False
                 break
         
-        # 若連續 3 天都達標，設置徽章，若未達標則設為 False
         badges_ref.document('streak_3').set({'unlocked': streak_ok, 'at': date_str}, merge=True)
         
         return jsonify({'message': '徽章評估完成'}), 200
 
-        
 # ------------------ 啟動伺服器 ------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
