@@ -601,16 +601,26 @@
         if (water >= waterGoal) {
           badges['water_2l_day'] = true;
         }
+        else{
+          badges['water_2l_day'] = false;
+        }
 
         // 檢查運動達標
         if (exercise >= exerciseGoal) {
           badges['exercise_30m_day'] = true;
+        }
+        else{
+          badges['exercise_30m_day'] = false;
         }
 
         // 檢查雙達標
         if (water >= waterGoal && exercise >= exerciseGoal) {
           badges['double_goal_day'] = true;
         }
+        else{
+          badges['double_goal_day'] = false;
+        }
+
 
         // 檢查連續3天徽章
         const recentRecords = await apiFetch('/api/achievement-history?limit=3');
