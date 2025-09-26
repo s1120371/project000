@@ -161,7 +161,7 @@ def user_profile():
     if request.method == 'GET':
         user_doc = user_ref.get()
         profile_data = user_doc.to_dict() if user_doc.exists else {}
-        
+
         # 關鍵修正：將 token 中的 email 附加到回傳資料中，確保前端一定能取到
         profile_data['email'] = decoded_token.get('email', '') 
         
@@ -172,6 +172,7 @@ def user_profile():
         update_data['updatedAt'] = firestore.SERVER_TIMESTAMP
         user_ref.set(update_data, merge=True)
         return jsonify({'message': '資料更新成功'}), 200
+
 
 # --- 修改密碼 API (已修正為新驗證方式) ---
 @app.route('/api/update-password', methods=['POST'])
