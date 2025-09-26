@@ -256,6 +256,7 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 18px;
+      margin-top: 20px; 
     }
 
     @media (min-width: 900px) {
@@ -286,6 +287,10 @@
         <button class="btn-secondary" id="saveGoals">儲存目標</button>
       </div>
     </div>
+    <div class="spacer-24"></div>
+    <section class="card">
+      <h3 style="margin:0 0 10px;">🗓️ 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
+    </section>
     <div class="grid grid-2">
       <div class="card" style="margin:0;">
         <h3 style="margin-top:0;">🥤 今日飲水</h3>
@@ -341,13 +346,13 @@
   </section>
   <div class="spacer-24"></div>
   <section class="grid grid-2">
-    <div class="card">
-      <h3 style="margin:0 0 10px;">📈 近七天趨勢</h3><canvas id="trendChart" height="120"></canvas>
-    </div>
-    <div class="card">
-      <h3 style="margin:0 0 10px;">🗓️ 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
-    </div>
-  </section>
+  <div class="card">
+    <h3 style="margin:0 0 10px;">🥤 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;">🏃‍♀️ 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
+  </div>
+</section>
   <div class="spacer-24"></div>
   <section class="card">
     <h3 style="margin:0 0 10px;">🧾 歷史記錄</h3>
@@ -368,6 +373,8 @@
   </section>
 
   <script>
+    let chartInstanceWater = null;
+    let chartInstanceExercise = null;
     // --- DOM refs and Global State ---
     const who = document.getElementById('who');
     const todayEl = document.getElementById('today');
@@ -507,49 +514,68 @@
     }
 
     async function loadRecent() {
-      try {
-        const records = await apiFetch('/api/achievement-history?limit=7');
-        records.reverse(); // API 回傳是降冪，圖表需要升冪
-        const labels = records.map(r => r.id.slice(5));
-        const waterData = records.map(r => r.waterMl || 0);
-        const exData = records.map(r => r.exerciseMin || 0);
+  try {
+    const records = await apiFetch('/api/achievement-history?limit=7');
+    console.log('Records:', records); // 加入這行來檢查API返回的資料
+    records.reverse(); // API 回傳是降冪，圖表需要升冪
+    const labels = records.map(r => r.id.slice(5));
+    const waterData = records.map(r => r.waterMl || 0);
+    const exData = records.map(r => r.exerciseMin || 0);
 
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
-              { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
-            ]
-          },
-          options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
-      } catch (error) {
-        console.error("Failed to load recent data for chart:", error);
-      }
-    }
+    // 飲水趨勢圖
+    const waterCtx = document.getElementById('waterTrendChart').getContext('2d');
+    if (chartInstanceWater) chartInstanceWater.destroy();
+    chartInstanceWater = new Chart(waterCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
+        ]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 運動趨勢圖
+    const exCtx = document.getElementById('exerciseTrendChart').getContext('2d');
+    if (chartInstanceExercise) chartInstanceExercise.destroy();
+    chartInstanceExercise = new Chart(exCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
+        ]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+  } catch (error) {
+    console.error("Failed to load recent data for chart:", error);
+  }
+}
+
 
     async function loadHistory() {
       try {
         const records = await apiFetch('/api/achievement-history?limit=30');
-        historyBody.innerHTML = records.map(v => {
-          const updated = v.updatedAt ? new Date(v.updatedAt).toLocaleString() : 'N/A'; // 格式化時間戳
-          return `
-            <tr>
-              <td>${v.id}</td>
-              <td>${v.waterMl || 0}</td>
-              <td>${v.exerciseMin || 0}</td>
-              <td>${updated}</td>
-              <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
-            </tr>`;
-        }).join('');
+        historyBody.innerHTML = records
+          .filter(v => v.waterMl > 0 || v.exerciseMin > 0)  // 篩選出有飲水或運動數據的紀錄
+          .map(v => {
+            const updated = v.updatedAt ? new Date(v.updatedAt).toLocaleString() : 'N/A'; // 格式化時間戳
+            return `
+              <tr>
+                <td>${v.id}</td>
+                <td>${v.waterMl || 0}</td>
+                <td>${v.exerciseMin || 0}</td>
+                <td>${updated}</td>
+                <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
+              </tr>`;
+          }).join('');
       } catch (error) {
         console.error("Failed to load history:", error);
       }
     }
+
 
     historyBody.addEventListener('click', async (e) => {
       const t = e.target;
@@ -571,7 +597,7 @@
       'water_2l_day': { name: '水分達標', icon: '💧' },
       'exercise_30m_day': { name: '動一動', icon: '🏃' },
       'double_goal_day': { name: '雙達標', icon: '🥇' },
-      'streak_3': { name: '連續3天雙達標', icon: '🔥' }
+      'streak_3': { name: '連續3天', icon: '🔥' }
     };
 
     async function loadBadges() {
@@ -662,7 +688,7 @@
       } catch (e) {
         who.textContent = '已登入';
       }
-
+      
       // 平行載入所有需要的資料
       await Promise.all([
         loadGoals(),

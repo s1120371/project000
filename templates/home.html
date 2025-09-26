@@ -87,16 +87,34 @@
       margin-top: 40px;
     }
 
+    .user-data {
+      margin-top: 40px; /* 新增的間距 */
+    }
+
     .info-box {
       background: #fff;
       padding: 20px;
       border-radius: 8px;
       border: 1px solid #ddd;
+      margin-top: 20px; /* 新增的間距 */
     }
 
     .info-box p {
       margin-bottom: 10px;
     }
+
+    
+    .update-date {
+    font-size: 0.8rem;
+    color: #888;
+    text-align: right;
+    margin-top: 15px;
+  }
+
+  /* 更新日期字樣 */
+  .update-date span {
+    font-weight: normal;
+  }
 
     .news-preview {
       padding: 40px 0;
@@ -106,7 +124,7 @@
     }
 
     .news-preview h3 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       color: #2e5caa;
       display: flex;
       align-items: center;
@@ -255,14 +273,15 @@
             class="news-btn" target="_blank" rel="noopener noreferrer">閱讀全文</a>
         </div>
       </div>
+      <p class="update-date"><span>資料更新日期：</span><span id="updateDate">2025-09-26</span></p>
     </div>
   </section>
-
   <footer>
     <p>&copy; 2025 健康管家 Health Tracker</p>
   </footer>
 
   <script>
+    
     document.addEventListener('DOMContentLoaded', async () => {
       const idToken = sessionStorage.getItem('firebaseIdToken');
       const userIdentity = document.getElementById("user-identity");
@@ -270,6 +289,7 @@
       const loginLinks = document.getElementById("login-links");
       const welcomeTitle = document.getElementById("welcome-title");
       const userInfoBox = document.getElementById("userInfo");
+
 
       if (!idToken) {
         authLinks.style.display = "none";

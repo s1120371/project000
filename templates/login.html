@@ -21,13 +21,36 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       width: 100%;
-      max-width: 420px;
+      max-width: 480px;
     }
 
     h2 {
       text-align: center;
       color: #2e7d32;
       margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 12px 0;
+      background-color: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 6px 6px 0 0;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    .tabs .active {
+      background-color: #4caf50;
+      color: white;
     }
 
     form {
@@ -37,17 +60,24 @@
 
     input,
     select {
-      padding: 10px 12px;
-      margin-bottom: 12px;
+      padding: 12px 15px;
+      margin-bottom: 18px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      font-size: 15px;
+      font-size: 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #4caf50;
+      outline: none;
     }
 
     button {
       background-color: #4caf50;
       color: white;
-      padding: 12px;
+      padding: 14px;
       border: none;
       border-radius: 6px;
       font-size: 16px;
@@ -60,37 +90,16 @@
       background-color: #388e3c;
     }
 
-    .tabs {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-    }
-
-    .tabs button {
-      flex: 1;
-      padding: 10px;
-      background-color: #ddd;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      border-radius: 6px 6px 0 0;
-    }
-
-    .tabs .active {
-      background-color: #4caf50;
-      color: white;
-    }
-
     .checkbox-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 12px;
       margin-top: -6px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     .checkbox-group label {
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .hidden {
@@ -99,16 +108,16 @@
 
     #status {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 15px;
       font-weight: bold;
     }
 
     #status.error {
-      color: red;
+      color: #d32f2f;
     }
 
     #status.success {
-      color: green;
+      color: #2e7d32;
     }
   </style>
 </head>
@@ -120,11 +129,15 @@
       <button id="tab-login" class="active">登入</button>
       <button id="tab-register">註冊</button>
     </div>
+
+    <!-- Login Form -->
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="Email" required />
       <input type="password" id="loginPassword" placeholder="密碼" required />
       <button type="submit">登入</button>
     </form>
+
+    <!-- Register Form -->
     <form id="registerForm" class="hidden">
       <input type="text" name="username" placeholder="帳號" required />
       <input type="email" name="email" placeholder="Email" required />
@@ -134,11 +147,12 @@
       <input type="date" name="birthdate" required />
       <select name="gender" required>
         <option value="">選擇性別</option>
-        <option value="male">男</option>
-        <option value="female">女</option>
-        <option value="other">其他</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+        <option value="其他">其他</option>
       </select>
       <label>請勾選你會過敏的食物：</label>
+      <br>
       <div class="checkbox-group">
         <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
         <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
@@ -149,20 +163,21 @@
       <label>飲食習慣：</label>
       <select name="diet" required>
         <option value="">請選擇</option>
-        <option value="omnivore">一般葷食</option>
-        <option value="lacto-ovo">蛋奶素</option>
-        <option value="vegan">全素</option>
+        <option value="一般葷食">一般葷食</option>
+        <option value="蛋奶素">蛋奶素</option>
+        <option value="全素">全素</option>
       </select>
       <label>健康目標：</label>
       <select name="goal" required>
         <option value="">請選擇</option>
-        <option value="weight-loss">減重</option>
-        <option value="muscle-gain">增肌</option>
-        <option value="control-sugar">控制血糖</option>
-        <option value="general-health">一般健康</option>
+        <option value="減重">減重</option>
+        <option value="增肌">增肌</option>
+        <option value="控制血糖">控制血糖</option>
+        <option value="一般健康">一般健康</option>
       </select>
       <button type="submit">註冊</button>
     </form>
+
     <div id="status"></div>
   </div>
 
@@ -215,7 +230,7 @@
         showStatus(`✅ ${result.message}，請切換至登入頁面登入。`, "success");
         form.reset();
       } catch (err) {
-        showStatus(`❌ 註冊失敗：${err.message}`, "error");
+        showStatus(`❌ 此帳號已註冊`);
       }
     });
 
@@ -242,7 +257,7 @@
         // 登入成功後跳轉到主頁
         window.location.href = "/home";
       } catch (err) {
-        showStatus(`❌ 登入失敗：${err.message}`, "error");
+        showStatus(`❌ 帳號密碼輸入錯誤,請重新登入`);
       }
     });
 
