@@ -1,0 +1,519 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #333;
+    line-height: 1.6;
+    cursor: none;
+    padding-bottom: 150px;
+    /* 關鍵！增加這個留白區域 */
+}
+
+/* --- 新增的滑鼠圖片樣式 --- */
+.cursor-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* 讓滑鼠可以穿透此層，點擊到底下內容 */
+    z-index: 9999;
+    /* 確保在最上層 */
+}
+
+.cursor-container img {
+    width: 40px;
+    margin-left: -20px;
+    /* 讓圖片中心對準滑鼠 */
+    position: absolute;
+}
+
+/* --- 新增樣式結束 --- */
+
+
+/* --- 全新動態磨砂背景 --- */
+.aurora-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    background-color: #f7f9fc;
+}
+
+.aurora-shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.6;
+}
+
+.shape-1 {
+    background-color: #88ff96;
+    width: 40vmin;
+    height: 40vmin;
+    top: 0;
+    left: 0;
+    animation: move-path-1 6s infinite alternate ease-in-out;
+}
+
+.shape-2 {
+    background-color: #aaefff;
+    width: 35vmin;
+    height: 35vmin;
+    top: 0;
+    left: 50%;
+    animation: move-path-2 5s infinite alternate ease-in-out 1s;
+}
+
+.shape-3 {
+    background-color: #4CAF50;
+    width: 45vmin;
+    height: 45vmin;
+    top: 0;
+    right: 0;
+    animation: move-path-3 7s infinite alternate ease-in-out;
+}
+
+.shape-4 {
+    background-color: #c6ffcd;
+    width: 30vmin;
+    height: 30vmin;
+    top: 50%;
+    right: 0;
+    animation: move-path-4 8s infinite alternate ease-in-out 2s;
+}
+
+.shape-5 {
+    background-color: #4CAF50;
+    width: 25vmin;
+    height: 25vmin;
+    bottom: 0;
+    right: 0;
+    animation: move-path-1 9s infinite alternate-reverse ease-in-out;
+}
+
+.shape-6 {
+    background-color: #fdeff9;
+    width: 30vmin;
+    height: 30vmin;
+    bottom: 0;
+    left: 50%;
+    animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
+}
+
+@keyframes move-path-1 {
+    from {
+        transform: translate(-20%, -20%);
+    }
+
+    to {
+        transform: translate(calc(100vw - 80%), calc(100vh - 80%));
+    }
+}
+
+@keyframes move-path-2 {
+    from {
+        transform: translate(-50%, -20%);
+    }
+
+    to {
+        transform: translate(-50%, calc(100vh - 80%));
+    }
+}
+
+@keyframes move-path-3 {
+    from {
+        transform: translate(20%, -20%);
+    }
+
+    to {
+        transform: translate(calc(-100vw + 120%), calc(100vh - 80%));
+    }
+}
+
+@keyframes move-path-4 {
+    from {
+        transform: translate(20%, -50%);
+    }
+
+    to {
+        transform: translate(calc(-100vw + 120%), -50%);
+    }
+}
+
+/* --- 動態背景結束 --- */
+
+
+.container {
+    width: 90%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px 0;
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header nav a {
+    color: white;
+    margin-left: 20px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+.nav-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    background: transparent;
+    border-bottom: none;
+}
+
+#nav {
+    position: relative;
+    border: none;
+    border-radius: 10em;
+    display: flex;
+    list-style: none;
+    background: #f5f5f5;
+    box-shadow: 10px 20px 20px #0000001a;
+    padding: 10px;
+}
+
+#nav li a {
+    position: relative;
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border: none;
+    outline: none;
+    color: #2e7d32;
+    display: inline-block;
+    text-decoration: none;
+    z-index: 3;
+    white-space: nowrap;
+}
+
+#nav .slide1,
+#nav .slide2 {
+    position: absolute;
+    display: inline-block;
+    height: 58px;
+    border-radius: 10em;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1.05);
+}
+
+#nav .slide1 {
+    background-color: #a5d6a7;
+    z-index: 2;
+}
+
+#nav .slide2 {
+    opacity: 0;
+    background-color: rgba(165, 214, 167, .5);
+    z-index: 1;
+    box-shadow: 0 0 10px #ffffffaa inset;
+}
+
+#nav .squeeze {
+    transform: scale(0.9);
+}
+
+.hero {
+    background: transparent;
+    padding: 60px 0;
+    text-align: center;
+}
+
+.hero .container {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    padding: 40px;
+}
+
+.hero h2,
+.hero p {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    width: 100%;
+    background-color: #f1f1f1;
+    color: #666;
+    text-align: center;
+    padding: 20px 0;
+    font-size: 0.9rem;
+    margin-top: 40px;
+}
+
+.user-data {
+    margin-top: 40px;
+}
+
+.info-box {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-top: 20px;
+}
+
+.info-box p {
+    margin-bottom: 10px;
+}
+
+.update-date {
+    font-size: 0.8rem;
+    color: #888;
+    text-align: right;
+    margin-top: 15px;
+}
+
+.update-date span {
+    font-weight: normal;
+}
+
+.news-preview {
+    padding: 40px 0;
+    background-color: transparent;
+    text-align: left;
+    margin-bottom: 40px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.news-preview h3 {
+    font-size: 1.8rem;
+    color: #2e5caa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    justify-content: center;
+}
+
+.card-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 50px;
+    padding: 20px 0;
+}
+
+.card-container .card {
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    --card-image-height: 100px;
+    --card-content-initial-space: 40px;
+    --card-hover-expansion: 120px;
+    height: calc(var(--card-image-height) + var(--card-content-initial-space));
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.25);
+    transition: 0.5s;
+    overflow: hidden;
+}
+
+.card-container .card:hover {
+    height: calc(var(--card-image-height) + var(--card-content-initial-space) + var(--card-hover-expansion));
+}
+
+.card-container .card .imgBx {
+    position: relative;
+    width: 100%;
+    height: var(--card-image-height);
+    background: var(--img);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: 0.5s;
+    filter: blur(25px);
+}
+
+.card-container .card:hover .imgBx {
+    background-size: 110%;
+    filter: blur(0px);
+}
+
+.card-container .card .imgBx::before {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    width: 100%;
+    height: 100px;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.card-container .card .content {
+    position: relative;
+    top: -40px;
+    z-index: 10;
+    padding: 15px 30px 0;
+    transition: 0.5s;
+}
+
+.card-container .card:hover .content {
+    transform: translateY(30px);
+}
+
+.card-container .card .content h3 {
+    position: relative;
+    font-size: 1.2em;
+    text-align: center;
+    color: #333;
+}
+
+.card-container .card .content h3 span {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    font-weight: 400;
+    font-size: 0.65em;
+    opacity: 0.75;
+}
+
+.card-container .card .content p {
+    position: relative;
+    opacity: 0;
+    transition: 0.5s;
+    color: #333;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 550px;
+    margin: 0 auto;
+}
+
+.card-container .card:hover .content p {
+    opacity: 1;
+}
+
+@media (max-width: 850px) {
+    #nav li a {
+        padding: 15px 20px;
+        font-size: 1rem;
+    }
+
+    #nav .slide1,
+    #nav .slide2 {
+        height: 54px;
+    }
+}
+
+/* --- 全新波浪定位邏輯：固定在視窗底部 (2025-10-02) --- */
+
+/* 1. 將波浪容器固定在視窗底部 */
+.wave-container {
+    position: fixed;
+    /* 關鍵！相對於瀏覽器視窗定位 */
+    left: 0;
+    bottom: 0;
+    /* 關鍵！貼齊視窗底部 */
+    width: 100%;
+    z-index: 1;
+    /* 讓它位於一般內容之上，但可以在需要時調整 */
+}
+
+/* 2. 設定波浪的高度 */
+.waves {
+    width: 100%;
+    height: 150px;
+    /* 您可以自由調整這個高度 */
+    /* min-height 和 max-height 在此情境下通常不需要 */
+}
+
+/* 3. 確保 footer 不會被波浪蓋住 */
+footer {
+    position: relative;
+    /* 讓 footer 可以設定 z-index */
+    z-index: 2;
+    /* 確保 footer 在波浪之上 */
+    background-color: #f1f1f1;
+    /* 確保 footer 有背景色才能蓋住波浪 */
+
+    /* --- 以下是您原有的樣式，保持不變 --- */
+    width: 100%;
+    color: #666;
+    text-align: center;
+    padding: 20px 0;
+    font-size: 0.9rem;
+    margin-top: 40px;
+}
+
+/*
+   您可以刪除之前為 .news-preview, .news-preview .container,
+   header, .nav-wrapper, .hero 添加的 position 和 z-index 樣式，
+   恢復它們的預設狀態。
+*/
+
+
+/* 4. 原有的波浪動畫 (這部分不變) */
+.parallax>use {
+    animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+}
+
+.parallax>use:nth-child(1) {
+    animation-delay: -2s;
+    animation-duration: 7s;
+}
+
+.parallax>use:nth-child(2) {
+    animation-delay: -3s;
+    animation-duration: 10s;
+}
+
+.parallax>use:nth-child(3) {
+    animation-delay: -4s;
+    animation-duration: 13s;
+}
+
+.parallax>use:nth-child(4) {
+    animation-delay: -5s;
+    animation-duration: 20s;
+}
+
+@keyframes move-forever {
+    0% {
+        transform: translate3d(-90px, 0, 0);
+    }
+
+    100% {
+        transform: translate3d(85px, 0, 0);
+    }
+}
+
+@media (max-width: 768px) {
+    .waves {
+        height: 100px;
+    }
+}
