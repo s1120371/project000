@@ -8,9 +8,18 @@ import os
 import requests
 from llama_cpp import Llama
 from datetime import datetime, timedelta
+from flask import render_template
+import torch, cv2, numpy as np, base64, re
+from PIL import Image
+from requests_oauthlib import OAuth1
+from deep_translator import GoogleTranslator
 
 # ------------------ 初始化設定 ------------------
-app = Flask(__name__, static_folder='templates', static_url_path='')
+#app = Flask(__name__, static_folder='templates', static_url_path='')
+app = Flask(__name__)
+
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+
 
 # 確保 serviceAccountKey.json 檔案存在
 if not os.path.exists('serviceAccountKey.json'):
@@ -79,19 +88,90 @@ def generate_llama_advice(user_query, user_profile):
 
 # ------------------ 靜態網頁路由 (維持不變) ------------------
 @app.route('/')
-def serve_index(): return send_from_directory(app.static_folder, 'index.html')
-@app.route('/login')
-def serve_login(): return send_from_directory(app.static_folder, 'login.html')
+def index():
+    return render_template("index.html")
+
 @app.route('/home')
-def serve_home(): return send_from_directory(app.static_folder, 'home.html')
+def home():
+    return render_template("home.html")
+
+@app.route('/login')
+def login():
+    return render_template("login.html")
+
+@app.route('/nutrition', methods=['GET', 'POST'])
+def nutrition():
+    detected_foods, food_infos, img_base64 = [], [], None
+
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return render_template("nutrition.html", error="請上傳圖片")
+
+        file = request.files['file']
+        img = Image.open(file.stream).convert('RGB')
+        img_array = np.array(img)
+
+        # YOLOv5 偵測
+        results = model(img_array)
+        labels = results.names
+        pred = results.pred[0]
+
+        detected_foods_conf = []
+        for *box, conf, cls in pred:
+            conf_score = conf.item()
+            if conf_score >= CONF_THRESHOLD:
+                detected_foods_conf.append({
+                    "name": labels[int(cls)],
+                    "confidence": round(conf_score, 2)
+                })
+
+        detected_foods = detected_foods_conf
+
+        # ---------------- FatSecret 查詢 (避免重複) ----------------
+        seen = set()
+        for f in detected_foods:
+            food_name = f["name"]
+            if food_name in seen:  # 已經查過就跳過
+                continue
+            seen.add(food_name)
+
+            infos = search_food(food_name)
+            if infos:
+                info = infos[0]
+                info["confidence"] = f["confidence"]
+                food_infos.append(info)
+            else:
+                food_infos.append({
+                    "food_name": food_name,
+                    "food_description": "查無資料",
+                    "confidence": f["confidence"],
+                    "nutrition": {}
+                })
+
+        # ---------------- 繪製結果圖片 ----------------
+        result_img = results.render()[0]
+        result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
+        _, buffer = cv2.imencode(".jpg", result_img)
+        img_base64 = base64.b64encode(buffer).decode("utf-8")
+
+    return render_template("nutrition.html",
+                           detected_foods=detected_foods,
+                           food_infos=food_infos,
+                           result_img=img_base64)
+
+
+
 @app.route('/edit-profile')
-def serve_edit_profile(): return send_from_directory(app.static_folder, 'edit-profile.html')
-@app.route('/achievements')
-def serve_achievements(): return send_from_directory(app.static_folder, 'achievements.html')
+def edit_profile():
+    return render_template("edit-profile.html")
+
 @app.route('/bmi')
-def serve_bmi(): return send_from_directory(app.static_folder, 'bmi.html')
-@app.route('/nutrition')
-def serve_nutrition(): return send_from_directory(app.static_folder, 'nutrition.html')
+def bmi():
+    return render_template("bmi.html")
+
+@app.route('/achievements')
+def achievements():
+    return render_template("achievements.html")
 
 # ------------------ API 路由 (全新擴充與修正) ------------------
 
@@ -317,6 +397,64 @@ def handle_badges():
         badges_ref.document('streak_3').set({'unlocked': streak_ok, 'at': date_str}, merge=True)
         
         return jsonify({'message': '徽章評估完成'}), 200
+API_BASE2 = "https://platform.fatsecret.com/rest/server.api"
+CONSUMER_KEY = "ba46d91448844c4ba3aa81ff09e605df"
+CONSUMER_SECRET = "60302dd6c9c240d1a1118a75677e3967"
+
+CONF_THRESHOLD = 0.5  # YOLOv5 信心閾值
+
+# 載入 YOLOv5 模型 (用 Ultralytics hub 或本地模型)
+model = torch.hub.load("ultralytics/yolov5", "yolov5s")  # 可以換成 yolov5n, yolov5m, yolov5l
+
+# ---------------- 功能函式 ----------------
+def translate_text(text, target='zh-TW'):
+    try:
+        return GoogleTranslator(source='auto', target=target).translate(text)
+    except:
+        return text
+
+def parse_nutrition(description):
+    """從 FatSecret food_description 裡解析營養成分"""
+    nutrition = {}
+    cal_match = re.search(r"Calories:\s*([\d.]+)kcal", description)
+    fat_match = re.search(r"Fat:\s*([\d.]+)g", description)
+    carb_match = re.search(r"Carbs:\s*([\d.]+)g", description)
+    protein_match = re.search(r"Protein:\s*([\d.]+)g", description)
+
+    if cal_match: nutrition["熱量 (kcal)"] = cal_match.group(1)
+    if fat_match: nutrition["脂肪 (g)"] = fat_match.group(1)
+    if carb_match: nutrition["碳水化合物 (g)"] = carb_match.group(1)
+    if protein_match: nutrition["蛋白質 (g)"] = protein_match.group(1)
+
+    return nutrition
+
+def search_food(food_name):
+    """查詢 FatSecret 並翻譯結果"""
+    auth = OAuth1(CONSUMER_KEY, CONSUMER_SECRET)
+    params = {
+        "method": "foods.search",
+        "search_expression": food_name,
+        "format": "json"
+    }
+    res = requests.get(API_BASE2, params=params, auth=auth)
+    food_list = []
+    if res.status_code == 200:
+        data = res.json()
+        if "foods" in data and "food" in data["foods"]:
+            for food_item in data["foods"]["food"]:
+                food_name_cn = translate_text(food_item["food_name"])
+                desc_cn = translate_text(food_item["food_description"])
+                nutrition = parse_nutrition(food_item["food_description"])
+                food_list.append({
+                    "food_name": food_name_cn,
+                    "food_description": desc_cn,
+                    "nutrition": nutrition
+                })
+    return food_list
+
+# ---------------- Flask Route ----------------
+
+
 
 # ------------------ 啟動伺服器 ------------------
 if __name__ == '__main__':
