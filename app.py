@@ -54,8 +54,8 @@ def verify_token(request):
     except Exception as e:
         return None, (jsonify({'error': f'Token 無效或過期: {e}'}), 401)
 
-# ------------------ 核心AI功能函式 (維持不變) ------------------
-def generate_llama_advice(user_query, user_profile):
+# ------------------ 核心AI功能函式 (需要修改以接收 history) ------------------
+def generate_llama_advice(user_query, user_profile, history_messages=None): # <-- 新增 history_messages 參數
     system_prompt = """你是一個專業又親切的「健康管家 AI」。
 
 你必須嚴格遵守以下規則：
@@ -77,14 +77,21 @@ def generate_llama_advice(user_query, user_profile):
 - 飲食習慣: {diet_map.get(user_profile.get('diet'), '未設定')}
 - 已知過敏原: {', '.join(user_profile.get('allergens', [])) or '無'}
 """
-    messages = [
-        {"role": "system", "content": system_prompt + "\n這是正在跟你對話的使用者的個人資料：\n" + profile_text},
-        {"role": "user", "content": user_query},
-    ]
+    # 組合 messages 列表
+    messages = [{"role": "system", "content": system_prompt + "\n這是正在跟你對話的使用者的個人資料：\n" + profile_text}]
+    
+    # 如果有歷史訊息，就把它們加進來
+    if history_messages:
+        messages.extend(history_messages)
+    
+    # 最後加上使用者本次的問題
+    messages.append({"role": "user", "content": user_query})
+
     response = llm.create_chat_completion(
         messages=messages, max_tokens=512, temperature=0.7
     )
     return response['choices'][0]['message']['content']
+
 
 # ------------------ 靜態網頁路由 (維持不變) ------------------
 @app.route('/')
@@ -210,25 +217,68 @@ def api_login():
         return jsonify({'error': f'登入失敗: {error_message}'}), 401
     except Exception as e: return jsonify({'error': f'伺服器發生錯誤: {str(e)}'}), 500
 
-# --- 問答 API (已修正為新驗證方式) ---
+# --- 問答 API (已修改為可記錄歷史對話) ---
 @app.route('/ask', methods=['POST'])
 def ask():
     decoded_token, error = verify_token(request)
     if error: return error
     uid = decoded_token['uid']
-    
+
     user_data = request.json
     user_question = user_data.get('question')
     if not user_question: return jsonify({'answer': '你沒有問問題喔！'})
-    
+
     try:
-        user_doc = db.collection('users').document(uid).get()
+        user_doc_ref = db.collection('users').document(uid)
+        user_doc = user_doc_ref.get()
         if not user_doc.exists: return jsonify({'answer': '錯誤：找不到您的使用者設定檔。'})
         
-        answer = generate_llama_advice(user_question, user_doc.to_dict())
+        # 1. 讀取歷史對話紀錄 (最近10筆)
+        chat_history_ref = user_doc_ref.collection('chatHistory')
+        # .order_by("timestamp", direction=Query.DESCENDING).limit(10) -> 從新到舊取10筆
+        # reversed() -> 因為要傳給 AI, 順序要變回從舊到新
+        docs = reversed(list(chat_history_ref.order_by("timestamp", direction=Query.DESCENDING).limit(10).stream()))
+        
+        history_messages = []
+        for doc in docs:
+            data = doc.to_dict()
+            history_messages.append({"role": data['role'], "content": data['content']})
+
+        # 2. 組合訊息，將歷史紀錄加到 system prompt 後面
+        # (generate_llama_advice 函式需要稍微修改，讓它可以接收 history)
+        answer = generate_llama_advice(user_question, user_doc.to_dict(), history_messages)
+        
+        # 3. 儲存本次新的對話紀錄
+        chat_history_ref.add({
+            'role': 'user',
+            'content': user_question,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        chat_history_ref.add({
+            'role': 'assistant', # 注意：AI 的角色是 'assistant'
+            'content': answer,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+
         return jsonify({'answer': answer})
     except Exception as e:
         return jsonify({'answer': f'伺服器發生未預期的錯誤: {str(e)}'}), 500
+
+# --- 新增 API: 獲取聊天歷史紀錄 ---
+@app.route('/api/chat-history', methods=['GET'])
+def get_chat_history():
+    decoded_token, error = verify_token(request)
+    if error: return error
+    uid = decoded_token['uid']
+
+    try:
+        chat_history_ref = db.collection('users').document(uid).collection('chatHistory')
+        docs = chat_history_ref.order_by("timestamp").stream() # 按照時間順序
+        
+        records = [{'role': doc.to_dict()['role'], 'content': doc.to_dict()['content']} for doc in docs]
+        return jsonify(records), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # --- 使用者資料 API (已修正為新驗證方式並確保回傳 email) ---
 @app.route('/api/user-profile', methods=['GET', 'POST'])
