@@ -54,16 +54,17 @@ def verify_token(request):
     except Exception as e:
         return None, (jsonify({'error': f'Token 無效或過期: {e}'}), 401)
 
-# ------------------ 核心AI功能函式 (需要修改以接收 history) ------------------
-def generate_llama_advice(user_query, user_profile, history_messages=None): # <-- 新增 history_messages 參數
+# ------------------ 核心AI功能函式 (已修改 System Prompt) ------------------
+def generate_llama_advice(user_query, user_profile, history_messages=None):
     system_prompt = """你是一個專業又親切的「健康管家 AI」。
 
 你必須嚴格遵守以下規則：
 1.  **首要規則：你的唯一輸出語言是繁體中文。絕對禁止使用英文或其他任何語言作答。**
-2.  你的任務是根據使用者的個人健康資料和他們提出的問題，提供準確、個人化且安全的健康飲食建議。
-3.  你的回答應該要自然地**整合**使用者的個人資料，而不是分開條列。
-4.  如果使用者的問題涉及到他的過敏原，請**務必**在回答中提出明確的安全警告。
-5.  保持回覆簡潔、溫暖、易於理解。
+2.  **重要規則：對話紀錄的優先級最高。** 如果使用者在對話中提到了新的健康資訊（例如新的過敏原、改變的飲食目標等），你必須將這些新資訊視為對個人基本資料的「即時更新」。當基本資料和對話紀錄有衝突時，永遠以對話紀錄中的最新說法為準。
+3.  你的任務是根據使用者的個人健康資料和他們提出的問題，提供準確、個人化且安全的健康飲食建議。
+4.  你的回答應該要自然地**整合**使用者的個人資料，而不是分開條列。
+5.  如果使用者的問題涉及到他的過敏原（無論是基本資料中的還是對話中提到的），請**務必**在回答中提出明確的安全警告。
+6.  保持回覆簡潔、溫暖、易於理解。
 """
     goal_map = {
         'weight-loss': '減重', 'muscle-gain': '增肌',
@@ -72,13 +73,14 @@ def generate_llama_advice(user_query, user_profile, history_messages=None): # <-
     diet_map = {
         'omnivore': '一般葷食', 'lacto-ovo': '蛋奶素', 'vegan': '全素'
     }
+    # 這裡的 profile_text 仍然是從資料庫讀取的原始資料
     profile_text = f"""
 - 健康目標: {goal_map.get(user_profile.get('goal'), '未設定')}
 - 飲食習慣: {diet_map.get(user_profile.get('diet'), '未設定')}
 - 已知過敏原: {', '.join(user_profile.get('allergens', [])) or '無'}
 """
     # 組合 messages 列表
-    messages = [{"role": "system", "content": system_prompt + "\n這是正在跟你對話的使用者的個人資料：\n" + profile_text}]
+    messages = [{"role": "system", "content": system_prompt + "\n這是使用者的基本資料（請記住，對話紀錄優先級更高）：\n" + profile_text}]
     
     # 如果有歷史訊息，就把它們加進來
     if history_messages:
