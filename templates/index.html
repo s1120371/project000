@@ -5,58 +5,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康飲食問答AI</title>
+    <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
+
     <style>
-        /* 您的 CSS 樣式維持不變 */
+        /* 引入 zpix 字體 */
+        @font-face {
+            font-family: 'Zpix';
+            src: url('/static/zpix.ttf') format('truetype');
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            /* 使用 Zpix 字體 */
+            font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
+            overflow: hidden;
         }
 
+        #three-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* 聊天框透明度 */
         #chat-container {
+            position: relative;
+            z-index: 10;
             width: 90%;
             max-width: 600px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             height: 80vh;
+            overflow: hidden;
         }
 
+
         #header {
-            background-color: #4CAF50;
+            background-color: rgba(59, 153, 42, 0.875);
             color: white;
             padding: 16px;
             text-align: center;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
         }
 
         #chat-box {
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto;
-            border-bottom: 1px solid #ddd;
         }
 
         #input-area {
             display: flex;
             padding: 16px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.3);
         }
 
         #user-input {
             flex-grow: 1;
-            border: 1px solid #ccc;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 20px;
             padding: 10px 15px;
             font-size: 16px;
             margin-right: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            font-family: 'Zpix', sans-serif;
         }
 
         #send-btn {
@@ -75,22 +101,47 @@
             background-color: #45a049;
         }
 
-        .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 18px;
+        /* --- 改造 nes.css 像素氣泡 --- */
+        .nes-balloon {
+            position: relative;
+            display: inline-block;
+            margin: 8px;
+            /* 保持一點邊距 */
             max-width: 80%;
+            word-wrap: break-word;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 0.5rem 0.5rem !important;
+
+            /* --- 邊框顏色設定在這裡 --- */
+            border-style: solid;
+            border-width: 4px;
+            border-image-slice: 3;
+            border-image-width: 3;
+            border-image-repeat: stretch;
+            border-image-source: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" ?><svg version="1.1" width="8" height="8" xmlns="http://www.w3.org/2000/svg"><path d="M3 1 h1 v1 h-1 z M4 1 h1 v1 h-1 z M2 2 h1 v1 h-1 z M5 2 h1 v1 h-1 z M1 3 h1 v1 h-1 z M6 3 h1 v1 h-1 z M1 4 h1 v1 h-1 z M6 4 h1 v1 h-1 z M2 5 h1 v1 h-1 z M5 5 h1 v1 h-1 z M3 6 h1 v1 h-1 z M4 6 h1 v1 h-1 z" fill="#4CAF50" /></svg>');
+            /* 將 #212529 改為 #437c45 */
+            border-image-outset: 2;
         }
 
-        .user-message {
-            background-color: #e1f5fe;
-            align-self: flex-end;
-            margin-left: auto;
+        .nes-balloon.from-right {
+            background-color: rgba(198, 221, 180, 0.75) !important;
         }
 
-        .ai-message {
-            background-color: #f1f1f1;
-            align-self: flex-start;
+        .nes-balloon.from-left {
+            background-color: rgba(255, 255, 255, 0.75) !important;
+        }
+
+        .nes-balloon p {
+            margin: 0;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        /* --- ★ 更新這段CSS來隱藏氣泡的兩個小角 --- */
+        .nes-balloon::before,
+        .nes-balloon::after {
+            display: none !important;
         }
 
         #backButton {
@@ -105,6 +156,7 @@
             font-weight: bold;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease;
+            z-index: 20;
         }
 
         #backButton:hover {
@@ -114,33 +166,156 @@
 </head>
 
 <body>
+    <canvas id="three-bg"></canvas>
+
     <a href="/home" id="backButton">🔙 返回主畫面</a>
+
     <div id="chat-container">
         <div id="header">
             <h2>健康飲食問答 AI</h2>
             <p id="auth-status" style="font-size: 0.8em; margin-top: 5px;">正在檢查登入狀態...</p>
         </div>
-        <div id="chat-box">
-            <div class="message ai-message">哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！</div>
-        </div>
+        <div id="chat-box"></div>
         <div id="input-area">
             <input type="text" id="user-input" placeholder="在這裡輸入你的問題...">
             <button id="send-btn">➤</button>
         </div>
     </div>
 
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.172.0/build/three.module.js"
+      }
+    }
+  </script>
+
+    <script type="module">
+        // Three.js 程式碼維持不變
+        import * as THREE from 'three';
+
+        const canvas = document.getElementById('three-bg');
+        const renderer = new THREE.WebGLRenderer({ canvas, antiasias: true, alpha: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
+        camera.position.z = 10;
+
+        const width = 20;
+        const segments = 200;
+        const waveCount = 3;
+        const waveLines = [];
+
+        const colors = [0x00cc88, 0x22dd88, 0x88ffaa];
+        const opacities = [0.9, 0.6, 0.4];
+        const offsets = [0, -0.3, -0.6];
+
+        for (let j = 0; j < waveCount; j++) {
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * width - width / 2;
+                points.push(new THREE.Vector3(x, 0, 0));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: colors[j],
+                transparent: true,
+                opacity: opacities[j],
+                linewidth: 2
+            });
+            const line = new THREE.Line(geometry, material);
+            line.position.y = offsets[j];
+            scene.add(line);
+            waveLines.push(line);
+        }
+
+        const loader = new THREE.TextureLoader();
+        const foods = [
+            "{{ url_for('static', filename='FluentEmojiFlatGreenSalad.png') }}",
+            "{{ url_for('static', filename='apple.png') }}",
+            "{{ url_for('static', filename='1.png') }}",
+            "{{ url_for('static', filename='my-cursor.png') }}",
+            'https://cdn-icons-png.flaticon.com/512/10107/10107601.png',
+            "{{ url_for('static', filename='1.png') }}",
+            "{{ url_for('static', filename='apple.png') }}",
+            "{{ url_for('static', filename='my-cursor.png') }}",
+            "{{ url_for('static', filename='1.png') }}",
+
+        ].map((url, i) => {
+            const tex = loader.load(url);
+            const mat = new THREE.SpriteMaterial({ map: tex });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.9, 0.9, 1);//調整食物大小
+            sprite.position.x = -6 + i * 4;
+            sprite.position.y = 1;
+            scene.add(sprite);
+            return sprite;
+        });
+
+        const waveLayers = [
+            [
+                { amp: 0.4, freq: 1.2, speed: 1.5, phase: 0 },
+                { amp: 0.2, freq: 2.5, speed: 1.2, phase: Math.PI / 3 }
+            ],
+            [
+                { amp: 0.3, freq: 1.0, speed: 1.1, phase: Math.PI / 4 },
+                { amp: 0.15, freq: 3.2, speed: 0.9, phase: Math.PI / 2 }
+            ],
+            [
+                { amp: 0.2, freq: 0.8, speed: 0.6, phase: Math.PI },
+                { amp: 0.1, freq: 2.0, speed: 0.5, phase: Math.PI / 5 }
+            ]
+        ];
+
+        const clock = new THREE.Clock();
+
+        function getWaveY(x, t, layer) {
+            return waveLayers[layer].reduce((sum, w) =>
+                sum + Math.sin(x * w.freq + t * w.speed + w.phase) * w.amp, 0);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            waveLines.forEach((line, layer) => {
+                const pos = line.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = getWaveY(x, t, layer) + offsets[layer];
+                    pos.setY(i, y);
+                }
+                pos.needsUpdate = true;
+            });
+
+            foods.forEach((f, i) => {
+                f.position.x += Math.sin(t * 0.5 + i) * 0.01;
+                const y = getWaveY(f.position.x, t, 0);
+                f.position.y = y + 0.4;//波浪與食物的高度
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            renderer.setSize(innerWidth, innerHeight);
+        });
+    </script>
+
     <script>
-        // 不再需要 import  firebase 
+        // JavaScript 邏輯維持不變
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const authStatus = document.getElementById('auth-status');
 
-        // --- 頁面載入時檢查 sessionStorage ---
         document.addEventListener('DOMContentLoaded', async () => {
             const idToken = sessionStorage.getItem('firebaseIdToken');
             if (idToken) {
-                // 為了更好的使用者體驗，可以再打一次 API 取得 email
+                sendBtn.disabled = false;
+                userInput.disabled = false;
                 try {
                     const response = await fetch('/api/user-profile', {
                         headers: { 'Authorization': `Bearer ${idToken}` }
@@ -154,8 +329,7 @@
                 } catch (e) {
                     authStatus.textContent = '已登入';
                 }
-                sendBtn.disabled = false;
-                userInput.disabled = false;
+                await loadChatHistory(idToken);
             } else {
                 authStatus.textContent = "⚠ 您尚未登入，請先前往主頁登入！";
                 sendBtn.disabled = true;
@@ -164,64 +338,97 @@
             }
         });
 
+        async function loadChatHistory(idToken) {
+            try {
+                const response = await fetch('/api/chat-history', {
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const history = await response.json();
+                if (history.length === 0) {
+                    appendMessage('哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！', 'ai');
+                } else {
+                    chatBox.innerHTML = '';
+                    history.forEach(msg => {
+                        const senderType = msg.role === 'assistant' ? 'ai' : 'user';
+                        appendMessage(msg.content, senderType);
+                    });
+                }
+            } catch (error) {
+                console.error('無法載入對話紀錄:', error);
+                appendMessage(`無法載入對話紀錄: ${error.message}`, 'ai');
+            }
+        }
+
         sendBtn.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') sendMessage();
         });
 
         async function sendMessage() {
-            // 從 sessionStorage 獲取 token
             const idToken = sessionStorage.getItem('firebaseIdToken');
             if (!idToken) {
                 alert("驗證資訊已失效，請重新登入！");
                 window.location.href = '/login';
                 return;
             }
-
             const question = userInput.value.trim();
             if (question === '') return;
-
             appendMessage(question, 'user');
             userInput.value = '';
 
-            const thinkingMessage = appendMessage('AI 思考中...', 'ai');
+            const thinkingMessageContent = appendMessage('AI 思考中...', 'ai');
 
             try {
-                // *** 關鍵修改：將 Token 放在 Authorization Header 中 ***
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${idToken}`
                     },
-                    // *** body 中不再需要 idToken ***
                     body: JSON.stringify({
                         question: question
                     })
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.answer || `HTTP error! status: ${response.status}`);
                 }
-
                 const data = await response.json();
-                // 使用 innerHTML 才能正確渲染換行符 <br>
-                thinkingMessage.innerHTML = data.answer.replace(/\n/g, '<br>');
-
+                thinkingMessageContent.innerHTML = data.answer.replace(/\n/g, '<br>');
             } catch (error) {
                 console.error('Error:', error);
-                thinkingMessage.innerText = `糟糕，發生錯誤：${error.message}`;
+                thinkingMessageContent.innerText = `糟糕，發生錯誤：${error.message}`;
             }
         }
 
         function appendMessage(text, sender) {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.marginBottom = '1rem';
+
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', sender + '-message');
-            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
-            chatBox.appendChild(messageDiv);
+            messageDiv.classList.add('nes-balloon');
+
+            if (sender === 'user') {
+                wrapper.style.justifyContent = 'flex-end';
+                messageDiv.classList.add('from-right');
+            } else {
+                wrapper.style.justifyContent = 'flex-start';
+                messageDiv.classList.add('from-left');
+            }
+
+            const contentP = document.createElement('p');
+            contentP.innerHTML = text.replace(/\n/g, '<br>');
+            messageDiv.appendChild(contentP);
+
+            wrapper.appendChild(messageDiv);
+            chatBox.appendChild(wrapper);
             chatBox.scrollTop = chatBox.scrollHeight;
-            return messageDiv;
+
+            return contentP;
         }
     </script>
 </body>
