@@ -119,10 +119,32 @@
     #status.success {
       color: #2e7d32;
     }
+
+    /* 滑鼠設定 */
+    .cursor-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .cursor-container img {
+      width: 40px;
+      height: 40px;
+      position: absolute;
+      top: -20px;
+      left: -20px;
+    }
   </style>
 </head>
 
 <body>
+  <!-- 滑鼠設定 -->
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
+
   <div class="card">
     <h2>健康管家會員系統</h2>
     <div class="tabs">
@@ -276,6 +298,19 @@
       document.getElementById("tab-register").classList.add("active");
       showStatus("", "");
     });
+  </script>
+  <!-- 滑鼠js -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
   </script>
 </body>
 

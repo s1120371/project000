@@ -91,10 +91,23 @@
     .status-error {
       color: #d32f2f;
     }
+
+    /* 滑鼠設定 */
+    .cursor-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
   </style>
 </head>
 
 <body>
+  <!-- 滑鼠設定 -->
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
   <div class="container">
     <h2>👤 修改個人資料</h2>
     <form id="editForm">
@@ -242,6 +255,19 @@
       sessionStorage.removeItem('firebaseIdToken');
       window.location.href = "/login";
     });
+  </script>
+  <!-- 滑鼠js -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
   </script>
 </body>
 

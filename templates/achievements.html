@@ -256,7 +256,7 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 18px;
-      margin-top: 20px; 
+      margin-top: 20px;
     }
 
     @media (min-width: 900px) {
@@ -268,10 +268,23 @@
     .spacer-24 {
       margin-top: 24px;
     }
+
+    /* 滑鼠設定 */
+    .cursor-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
   </style>
 </head>
 
 <body>
+  <!-- 滑鼠設定 -->
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
   <a href="/home" id="backButton">🔙 返回主畫面</a>
   <h2>💪 我的成就</h2>
   <p style="margin-bottom:10px;color:#555">點擊快速鍵或輸入自訂數值來記錄飲水與運動，達成目標自動解鎖徽章！</p>
@@ -346,13 +359,13 @@
   </section>
   <div class="spacer-24"></div>
   <section class="grid grid-2">
-  <div class="card">
-    <h3 style="margin:0 0 10px;">🥤 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 10px;">🏃‍♀️ 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
-  </div>
-</section>
+    <div class="card">
+      <h3 style="margin:0 0 10px;">🥤 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px;">🏃‍♀️ 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
+    </div>
+  </section>
   <div class="spacer-24"></div>
   <section class="card">
     <h3 style="margin:0 0 10px;">🧾 歷史記錄</h3>
@@ -514,45 +527,45 @@
     }
 
     async function loadRecent() {
-  try {
-    const records = await apiFetch('/api/achievement-history?limit=7');
-    console.log('Records:', records); // 加入這行來檢查API返回的資料
-    records.reverse(); // API 回傳是降冪，圖表需要升冪
-    const labels = records.map(r => r.id.slice(5));
-    const waterData = records.map(r => r.waterMl || 0);
-    const exData = records.map(r => r.exerciseMin || 0);
+      try {
+        const records = await apiFetch('/api/achievement-history?limit=7');
+        console.log('Records:', records); // 加入這行來檢查API返回的資料
+        records.reverse(); // API 回傳是降冪，圖表需要升冪
+        const labels = records.map(r => r.id.slice(5));
+        const waterData = records.map(r => r.waterMl || 0);
+        const exData = records.map(r => r.exerciseMin || 0);
 
-    // 飲水趨勢圖
-    const waterCtx = document.getElementById('waterTrendChart').getContext('2d');
-    if (chartInstanceWater) chartInstanceWater.destroy();
-    chartInstanceWater = new Chart(waterCtx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
-        ]
-      },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
+        // 飲水趨勢圖
+        const waterCtx = document.getElementById('waterTrendChart').getContext('2d');
+        if (chartInstanceWater) chartInstanceWater.destroy();
+        chartInstanceWater = new Chart(waterCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
+            ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
 
-    // 運動趨勢圖
-    const exCtx = document.getElementById('exerciseTrendChart').getContext('2d');
-    if (chartInstanceExercise) chartInstanceExercise.destroy();
-    chartInstanceExercise = new Chart(exCtx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
-        ]
-      },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
-  } catch (error) {
-    console.error("Failed to load recent data for chart:", error);
-  }
-}
+        // 運動趨勢圖
+        const exCtx = document.getElementById('exerciseTrendChart').getContext('2d');
+        if (chartInstanceExercise) chartInstanceExercise.destroy();
+        chartInstanceExercise = new Chart(exCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
+            ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      } catch (error) {
+        console.error("Failed to load recent data for chart:", error);
+      }
+    }
 
 
     async function loadHistory() {
@@ -627,7 +640,7 @@
         if (water >= waterGoal) {
           badges['water_2l_day'] = true;
         }
-        else{
+        else {
           badges['water_2l_day'] = false;
         }
 
@@ -635,7 +648,7 @@
         if (exercise >= exerciseGoal) {
           badges['exercise_30m_day'] = true;
         }
-        else{
+        else {
           badges['exercise_30m_day'] = false;
         }
 
@@ -643,7 +656,7 @@
         if (water >= waterGoal && exercise >= exerciseGoal) {
           badges['double_goal_day'] = true;
         }
-        else{
+        else {
           badges['double_goal_day'] = false;
         }
 
@@ -688,7 +701,7 @@
       } catch (e) {
         who.textContent = '已登入';
       }
-      
+
       // 平行載入所有需要的資料
       await Promise.all([
         loadGoals(),
@@ -698,6 +711,19 @@
         loadHistory()
       ]);
     });
+  </script>
+  <!-- 滑鼠js -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
   </script>
 </body>
 
