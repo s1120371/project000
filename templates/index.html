@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康飲食問答AI</title>
-    <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
-
     <style>
         /* 引入 zpix 字體 */
         @font-face {
@@ -101,48 +99,30 @@
             background-color: #45a049;
         }
 
-        /* --- 改造 nes.css 像素氣泡 --- */
-        .nes-balloon {
-            position: relative;
-            display: inline-block;
-            margin: 8px;
-            /* 保持一點邊距 */
+        /* --- ★ 還原為玻璃質感氣泡樣式 --- */
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
             max-width: 80%;
-            word-wrap: break-word;
             color: #333;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            padding: 0.5rem 0.5rem !important;
-
-            /* --- 邊框顏色設定在這裡 --- */
-            border-style: solid;
-            border-width: 4px;
-            border-image-slice: 3;
-            border-image-width: 3;
-            border-image-repeat: stretch;
-            border-image-source: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" ?><svg version="1.1" width="8" height="8" xmlns="http://www.w3.org/2000/svg"><path d="M3 1 h1 v1 h-1 z M4 1 h1 v1 h-1 z M2 2 h1 v1 h-1 z M5 2 h1 v1 h-1 z M1 3 h1 v1 h-1 z M6 3 h1 v1 h-1 z M1 4 h1 v1 h-1 z M6 4 h1 v1 h-1 z M2 5 h1 v1 h-1 z M5 5 h1 v1 h-1 z M3 6 h1 v1 h-1 z M4 6 h1 v1 h-1 z" fill="#4CAF50" /></svg>');
-            /* 將 #212529 改為 #437c45 */
-            border-image-outset: 2;
-        }
-
-        .nes-balloon.from-right {
-            background-color: rgba(198, 221, 180, 0.75) !important;
-        }
-
-        .nes-balloon.from-left {
-            background-color: rgba(255, 255, 255, 0.75) !important;
-        }
-
-        .nes-balloon p {
-            margin: 0;
-            font-size: 1em;
             line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            word-wrap: break-word;
+            /* 確保長文字能換行 */
         }
 
-        /* --- ★ 更新這段CSS來隱藏氣泡的兩個小角 --- */
-        .nes-balloon::before,
-        .nes-balloon::after {
-            display: none !important;
+        .user-message {
+            background-color: rgba(198, 221, 180, 0.75);
+            /* 半透明綠色 */
         }
+
+        .ai-message {
+            background-color: rgba(255, 255, 255, 0.75);
+            /* 半透明白色 */
+        }
+
+        /* 移除了所有 .nes-balloon 相關的 CSS */
 
         #backButton {
             position: fixed;
@@ -195,7 +175,7 @@
         import * as THREE from 'three';
 
         const canvas = document.getElementById('three-bg');
-        const renderer = new THREE.WebGLRenderer({ canvas, antiasias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
         renderer.setSize(innerWidth, innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -379,7 +359,7 @@
             appendMessage(question, 'user');
             userInput.value = '';
 
-            const thinkingMessageContent = appendMessage('AI 思考中...', 'ai');
+            const thinkingMessageDiv = appendMessage('AI 思考中...', 'ai');
 
             try {
                 const response = await fetch('/ask', {
@@ -397,38 +377,41 @@
                     throw new Error(errorData.answer || `HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                thinkingMessageContent.innerHTML = data.answer.replace(/\n/g, '<br>');
+                thinkingMessageDiv.innerHTML = data.answer.replace(/\n/g, '<br>');
             } catch (error) {
                 console.error('Error:', error);
-                thinkingMessageContent.innerText = `糟糕，發生錯誤：${error.message}`;
+                thinkingMessageDiv.innerText = `糟糕，發生錯誤：${error.message}`;
             }
         }
 
+        /* --- ★ 更新 appendMessage 函式以使用玻璃質感樣式 --- */
         function appendMessage(text, sender) {
             const wrapper = document.createElement('div');
             wrapper.style.display = 'flex';
             wrapper.style.marginBottom = '1rem';
 
+            // 1. 建立 messageDiv
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('nes-balloon');
+            messageDiv.classList.add('message'); // 使用 'message' class
 
+            // 2. 根據 sender 決定樣式和對齊
             if (sender === 'user') {
                 wrapper.style.justifyContent = 'flex-end';
-                messageDiv.classList.add('from-right');
+                messageDiv.classList.add('user-message'); // 使用 'user-message' class
             } else {
                 wrapper.style.justifyContent = 'flex-start';
-                messageDiv.classList.add('from-left');
+                messageDiv.classList.add('ai-message'); // 使用 'ai-message' class
             }
 
-            const contentP = document.createElement('p');
-            contentP.innerHTML = text.replace(/\n/g, '<br>');
-            messageDiv.appendChild(contentP);
+            // 3. 直接將 HTML 填入 messageDiv
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
 
             wrapper.appendChild(messageDiv);
             chatBox.appendChild(wrapper);
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            return contentP;
+            // 4. 返回 messageDiv，以便 'AI 思考中...' 訊息可以被更新
+            return messageDiv;
         }
     </script>
 </body>
