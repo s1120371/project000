@@ -261,16 +261,6 @@ header nav a:hover {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-footer {
-    width: 100%;
-    background-color: #f1f1f1;
-    color: #666;
-    text-align: center;
-    padding: 20px 0;
-    font-size: 0.9rem;
-    margin-top: 40px;
-}
-
 .user-data {
     margin-top: 40px;
 }
@@ -455,15 +445,8 @@ footer {
 /* 3. 確保 footer 不會被波浪蓋住 */
 footer {
     position: relative;
-    /* 讓 footer 可以設定 z-index */
     z-index: 2;
-    /* 確保 footer 在波浪之上 */
-    background-color: #f1f1f1;
-    /* 確保 footer 有背景色才能蓋住波浪 */
-
-    /* --- 以下是您原有的樣式，保持不變 --- */
     width: 100%;
-    color: #666;
     text-align: center;
     padding: 20px 0;
     font-size: 0.9rem;
