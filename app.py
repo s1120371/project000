@@ -14,7 +14,7 @@ from deep_translator import GoogleTranslator
 
 # ------------------ 初始化設定 ------------------
 #app = Flask(__name__, static_folder='templates', static_url_path='')
-app = Flask(__name__, static_folder='templates', static_url_path='')
+app = Flask(__name__)
 
 
 # 確保 serviceAccountKey.json 檔案存在
@@ -399,3 +399,4 @@ def handle_badges():
 # ------------------ 啟動伺服器 ------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
