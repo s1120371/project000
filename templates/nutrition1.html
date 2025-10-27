@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>營養辨識結果</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+  <h1 class="mb-4 text-center">🍎 食物辨識與營養資訊</h1>
+
+  <!-- 上傳表單 -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data" class="d-flex align-items-center gap-3">
+        <input type="file" class="form-control" name="file" required>
+        <button type="submit" class="btn btn-primary">上傳並辨識</button>
+      </form>
+      {% if error %}
+        <p class="text-danger mt-3">{{ error }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 辨識結果圖片 -->
+  {% if result_img %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body text-center">
+        <h2 class="h5 mb-3">🔍 辨識結果圖片</h2>
+        <img src="data:image/jpeg;base64,{{ result_img }}" class="img-fluid rounded shadow-sm" style="max-width:500px">
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- 偵測到的食物 -->
+  {% if detected_foods %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">🍽 偵測到的食物</h2>
+        <ul class="list-group">
+          {% for f in detected_foods %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ f.name }}
+              <span class="badge bg-success rounded-pill">信心度: {{ f.confidence }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- 營養資訊 -->
+  {% if food_infos %}
+    <div>
+      <h2 class="h4 mb-3">🥗 營養資訊</h2>
+      <div class="row">
+        {% for info in food_infos %}
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">{{ info.food_name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">信心度: {{ info.confidence }}</h6>
+                <p class="card-text">{{ info.food_description }}</p>
+              </div>
+              {% if info.nutrition %}
+              <ul class="list-group list-group-flush">
+                {% for key, value in info.nutrition.items() %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ key }}
+                    <span class="badge bg-primary rounded-pill">{{ value }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

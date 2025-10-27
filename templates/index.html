@@ -225,9 +225,13 @@
 
         ].map((url, i) => {
             const tex = loader.load(url);
-            const mat = new THREE.SpriteMaterial({ map: tex });
+            const mat = new THREE.SpriteMaterial({
+                map: tex,
+                transparent: true,
+                opacity: 1.0 // 設定為 100% 不透明
+            });
             const sprite = new THREE.Sprite(mat);
-            sprite.scale.set(0.9, 0.9, 1);//調整食物大小
+            sprite.scale.set(0.5, 0.5, 1);//調整食物大小
             sprite.position.x = -6 + i * 4;
             sprite.position.y = 1;
             scene.add(sprite);
