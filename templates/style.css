@@ -34,8 +34,6 @@ body {
     position: absolute;
 }
 
-/* --- 新增樣式結束 --- */
-
 
 /* --- 全新動態磨砂背景 --- */
 .aurora-background {
@@ -110,6 +108,7 @@ body {
     animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
 }
 
+
 @keyframes move-path-1 {
     from {
         transform: translate(-20%, -20%);
@@ -160,7 +159,7 @@ body {
 }
 
 header {
-    background-color: #4CAF50;
+    background-color: #4dc852;
     color: white;
     padding: 15px 0;
 }
@@ -259,16 +258,6 @@ header nav a:hover {
 .hero h2,
 .hero p {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-footer {
-    width: 100%;
-    background-color: #f1f1f1;
-    color: #666;
-    text-align: center;
-    padding: 20px 0;
-    font-size: 0.9rem;
-    margin-top: 40px;
 }
 
 .user-data {
@@ -458,7 +447,7 @@ footer {
     /* 讓 footer 可以設定 z-index */
     z-index: 2;
     /* 確保 footer 在波浪之上 */
-    background-color: #f1f1f1;
+    background-color: transparent;
     /* 確保 footer 有背景色才能蓋住波浪 */
 
     /* --- 以下是您原有的樣式，保持不變 --- */
