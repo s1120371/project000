@@ -4,18 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食物營養辨識</title>
+    <title>食物營養辨識與紀錄</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
     <style>
-        /* 引入 zpix 字體 */
+        /* (CSS 樣式保持不變... 省略以節省空間) */
         @font-face {
             font-family: 'Zpix';
             src: url('/static/zpix.ttf') format('truetype');
         }
 
-        /* 自訂一些額外樣式 */
         body {
-            /* 使用 Zpix 字體 */
             font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f8f9fa;
         }
@@ -33,7 +34,6 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s ease;
             z-index: 1000;
-            /* 提高層級確保在背景之上 */
         }
 
         .container {
@@ -43,7 +43,6 @@
         .card-title {
             font-weight: bold;
             color: #0d6efd;
-            /* Bootstrap primary color */
         }
 
         .upload-card {
@@ -58,22 +57,150 @@
             height: auto;
             margin-bottom: 1rem;
         }
+
+        .badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
+
+        .save-section {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .save-section .btn-success {
+            font-family: 'Zpix', sans-serif;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+        }
+
+        #saveStatus {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .status-success {
+            color: #198754;
+        }
+
+        .status-error {
+            color: #dc3545;
+        }
+
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .form-check-label {
+            cursor: pointer;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e6e9ef;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(30, 60, 90, .06);
+            padding: 20px;
+            margin-bottom: 28px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #4caf50;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        td ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+            text-align: left;
+        }
+
+        td ul li {
+            background: #e8f5e9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+        }
+
+        .delete-btn {
+            font-family: 'Zpix', sans-serif;
+            background-color: #e53935;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* --- ★ (新) AI 評價框樣式 --- */
+        #aiEvaluationBox {
+            background-color: #f8f9fa;
+            /* 淺灰色背景 */
+            border: 1px solid #dee2e6;
+            text-align: left;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        #aiEvaluationBox h5 {
+            color: #0d6efd;
+            /* 藍色標題 */
+        }
+
+        #aiEvaluationContent {
+            line-height: 1.7;
+            white-space: pre-wrap;
+            /* 保留 AI 回傳的換行 */
+        }
     </style>
 </head>
 
 <body>
-     <a href="/home" id="backButton">🔙 返回主畫面</a>
+    <a href="/home" id="backButton">🔙 返回主畫面</a>
 
     <div class="container py-5">
         <div class="text-center mb-5">
-            <h1 class="display-5 fw-bold"><img src="{{ url_for('static', filename='apple.png') }}" alt="蘋果圖示" width="50"height="50"style="vertical-align: middle;"> 食物辨識與營養資訊</h1>
-            <p class="lead text-muted">上傳一張含有食物的圖片，AI 將自動為您分析！</p>
+            <h1 class="display-5 fw-bold"><img src="{{ url_for('static', filename='apple.png') }}" alt="蘋果圖示" width="50"
+                    height="50" style="vertical-align: middle;"> 食物辨識與營養資訊</h1>
+            <p class="lead text-muted">上傳一張或多張圖片進行辨識，並可儲存營養紀錄。</p>
         </div>
 
         <div class="card shadow-sm mb-4 upload-card">
             <form action="/predict" method="POST" enctype="multipart/form-data">
                 <div class="input-group">
-                    <input type="file" class="form-control" name="image" required accept="image/*">
+                    <input type="file" class="form-control" name="image" required accept="image/*" multiple>
                     <button type="submit" class="btn btn-primary fw-bold">上傳並辨識</button>
                 </div>
             </form>
@@ -85,27 +212,45 @@
         </div>
         {% endif %}
 
-        {% if result_image %}
-        <div class="row g-4 mt-4">
+        {% if all_results and all_results|length > 0 %}
+
+        <div class="save-section sticky-top" style="top: 10px; z-index: 900;">
+            <h4>🍴 儲存今日飲食</h4>
+            <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕。</p>
+            <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
+            <div id="saveStatus"></div>
+
+        </div>
+        <div class="card" id="aiEvaluationBox" style="display:none; margin-top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title">🤖 AI 飲食分析</h5>
+                <pre id="aiEvaluationContent"
+                    style="white-space: pre-wrap; font-family: 'Zpix', sans-serif; line-height: 1.7;">...AI 正在分析中...</pre>
+            </div>
+        </div>
+        <hr class="my-4">
+
+        {% for res in all_results %}
+        <div class="row g-4 mt-4 border-bottom pb-4 mb-4">
             <div class="col-lg-6">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header fw-bold">🔍 辨識結果圖片</div>
                     <div class="card-body text-center">
-                        <img src="{{ result_image }}" class="img-fluid rounded shadow-sm result-img" alt="辨識結果">
-
+                        <img src="{{ res.result_image }}" class="img-fluid rounded shadow-sm result-img" alt="辨識結果">
                         <h5 class="mt-3">原始圖片：</h5>
-                        <img src="{{ uploaded_image }}" class="img-fluid rounded shadow-sm result-img" alt="原始圖片">
+                        <img src="{{ res.uploaded_image }}" class="img-fluid rounded shadow-sm result-img" alt="原始圖片">
                     </div>
                 </div>
-
-                {% if detected_foods %}
+                {% if res.detected_foods %}
                 <div class="card shadow-sm">
                     <div class="card-header fw-bold">🍽️ 偵測到的食物</div>
                     <div class="card-body">
                         <ul class="list-group list-group-flush">
-                            {% for f in detected_foods %}
+                            {% for f in res.detected_foods %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 {{ f.name }}
+                                {% if f.source %}<span class="badge bg-secondary rounded-pill ms-1">模型 {{ f.source
+                                    }}</span>{% endif %}
                                 <span class="badge bg-success rounded-pill">信心度: {{ f.confidence }}</span>
                             </li>
                             {% endfor %}
@@ -114,21 +259,35 @@
                 </div>
                 {% endif %}
             </div>
-
             <div class="col-lg-6">
-                <h2 class="h4 mb-3">🥗 詳細營養資訊</h2>
-                {% if food_infos %}
+                <h2 class="h4 mb-3">🥗 詳細營養資訊 (請勾選要儲存的項目)</h2>
+                {% if res.food_infos %}
                 <div class="d-flex flex-column gap-3">
-                    {% for info in food_infos %}
+                    {% for info in res.food_infos %}
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title">{{ info.food_name }}</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">{{ info.food_name }}</h5>
+                                <div class="form-check">
+                                    <input class="form-check-input save-food-item" type="checkbox"
+                                        id="food-{{ res.result_image }}-{{ loop.index }}"
+                                        data-name="{{ info.food_name }}"
+                                        data-calories="{{ info.index['熱量 (kcal)'] | default(0) }}"
+                                        data-fat="{{ info.index['脂肪 (g)'] | default(0) }}"
+                                        data-carbs="{{ info.index['碳水化合物 (g)'] | default(0) }}"
+                                        data-protein="{{ info.index['蛋白質 (g)'] | default(0) }}" checked>
+                                    <label class="form-check-label" for="food-{{ res.result_image }}-{{ loop.index }}">
+                                        儲存
+                                    </label>
+                                </div>
+                            </div>
+                            {% if info.source %}<h6 class="card-subtitle mb-2 text-muted">來源: 模型 {{ info.source }}</h6>
+                            {% endif %}
                             <h6 class="card-subtitle mb-2 text-muted">信心度: {{ info.confidence }}</h6>
                             <p class="card-text"><small>{{ info.food_description }}</small></p>
-
-                            {% if info.nutrition %}
+                            {% if info.index %}
                             <ul class="list-group list-group-flush mt-3">
-                                {% for key, value in info.nutrition.items() %}
+                                {% for key, value in info.index.items() %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                     {{ key }}
                                     <span class="badge bg-primary rounded-pill">{{ value }}</span>
@@ -147,9 +306,254 @@
                 {% endif %}
             </div>
         </div>
+        {% endfor %}
         {% endif %}
+
+
+        <hr class="my-5">
+        <div class="text-center">
+            <h2 class="display-6 fw-bold">📈 營養攝取歷史</h2>
+        </div>
+        <p id="history-status" class="text-center">登入狀態載入中...</p>
+        <div class="card">
+            <h3>📊 每日熱量攝取趨勢</h3>
+            <canvas id="nutritionChart" width="800" height="300"></canvas>
+        </div>
+        <div class="card">
+            <h3>🧾 飲食紀錄</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>時間</th>
+                            <th>食物清單</th>
+                            <th>總熱量 (kcal)</th>
+                            <th>總蛋白質 (g)</th>
+                            <th>總脂肪 (g)</th>
+                            <th>總碳水 (g)</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordListBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
+    <script>
+        // 全域變數
+        const idToken = sessionStorage.getItem('firebaseIdToken');
+        let chartInstance = null;
+
+        // --- API 輔助函式 ---
+        async function apiFetch(endpoint, options = {}) {
+            // (此函式內容不變，省略)
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+            const response = await fetch(endpoint, { ...options, headers });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+            if (response.status === 204 || response.headers.get('content-length') === '0') return null;
+            return response.json();
+        }
+
+        // --- 1. 處理儲存邏輯 (*** ★ 修改函式 ***) ---
+        function setupSaveLogic() {
+            const saveButton = document.getElementById('saveButton');
+            const saveStatus = document.getElementById('saveStatus');
+
+            // ★ (新) 取得 AI 評價框的 DOM
+            const aiBox = document.getElementById('aiEvaluationBox');
+            const aiContent = document.getElementById('aiEvaluationContent');
+
+            if (saveButton) {
+                saveButton.addEventListener('click', async () => {
+                    if (!idToken) {
+                        alert('請先登入才能儲存紀錄！');
+                        window.location.href = '/login';
+                        return;
+                    }
+
+                    const checkedItems = document.querySelectorAll('.save-food-item:checked');
+                    if (checkedItems.length === 0) {
+                        setStatus('請至少勾選一個要儲存的食物項目！', 'error');
+                        return;
+                    }
+
+                    let total_calories = 0, total_fat = 0, total_carbs = 0, total_protein = 0;
+                    const foods_list = [];
+
+                    checkedItems.forEach(item => {
+                        const name = item.dataset.name;
+                        const calories = parseFloat(item.dataset.calories || 0);
+                        const fat = parseFloat(item.dataset.fat || 0);
+                        const carbs = parseFloat(item.dataset.carbs || 0);
+                        const protein = parseFloat(item.dataset.protein || 0);
+
+                        total_calories += calories;
+                        total_fat += fat;
+                        total_carbs += carbs;
+                        total_protein += protein;
+                        foods_list.push(name);
+                    });
+
+                    // 這是我們要傳送給兩個 API 的資料
+                    const recordData = {
+                        date: new Date().toLocaleDateString('zh-TW'),
+                        time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                        total_calories: parseFloat(total_calories.toFixed(2)),
+                        total_fat: parseFloat(total_fat.toFixed(2)),
+                        total_carbs: parseFloat(total_carbs.toFixed(2)),
+                        total_protein: parseFloat(total_protein.toFixed(2)),
+                        foods_list: foods_list
+                    };
+
+                    setStatus('儲存中...', 'info');
+                    // ★ (新) 顯示 AI 框並顯示讀取中
+                    aiBox.style.display = 'block';
+                    aiContent.textContent = '...餐點儲存中，AI 正在準備分析...';
+
+                    try {
+                        // --- 步驟一：儲存紀錄 ---
+                        await apiFetch('/api/nutrition-records', {
+                            method: 'POST',
+                            body: JSON.stringify(recordData)
+                        });
+
+                        setStatus(`✅ 儲存成功！(共 ${foods_list.length} 項食物)`, 'success');
+                        checkedItems.forEach(item => item.checked = false);
+
+                        // 儲存成功後，立刻重新載入歷史紀錄
+                        await loadNutritionRecords();
+
+                        // --- ★ (新) 步驟二：呼叫 AI 評價 ---
+                        aiContent.textContent = '...餐點已儲存，AI 正在分析您的飲食...';
+
+                        try {
+                            const evalResponse = await apiFetch('/api/evaluate-diet', {
+                                method: 'POST',
+                                body: JSON.stringify(recordData) // 使用相同的 recordData
+                            });
+
+                            // 將 AI 回傳的文字（包含換行）顯示出來
+                            aiContent.textContent = evalResponse.evaluation;
+
+                        } catch (evalErr) {
+                            aiContent.textContent = `❌ 載入 AI 評價時發生錯誤: ${evalErr.message}`;
+                        }
+
+                    } catch (err) {
+                        setStatus(`❌ 儲存失敗：${err.message}`, 'error');
+                        aiBox.style.display = 'none'; // 儲存失敗就隱藏 AI 框
+                    }
+                });
+            }
+
+            function setStatus(message, type) {
+                if (saveStatus) {
+                    saveStatus.textContent = message;
+                    saveStatus.className = `status-${type}`;
+                }
+            }
+        }
+
+        // --- 2. 處理歷史紀錄載入、繪圖、刪除 ---
+        // (此區塊 loadNutritionRecords, handleRecordDelete, drawChart 函式皆保持不變，省略)
+        const statusEl = document.getElementById('history-status');
+        async function loadNutritionRecords() {
+            try {
+                const records = await apiFetch('/api/nutrition-records');
+                const listTbody = document.getElementById("recordListBody");
+                listTbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>${record.date}</td>
+                    <td>${record.time}</td>
+                    <td><ul>${(record.foods_list || []).map(food => `<li>${food}</li>`).join('')}</ul></td>
+                    <td>${record.total_calories}</td>
+                    <td>${record.total_protein}</td>
+                    <td>${record.total_fat}</td>
+                    <td>${record.total_carbs}</td>
+                    <td><button class="delete-btn" data-id="${record.id}">刪除</button></td>
+                </tr>`).join('');
+                const dailyData = {};
+                records.forEach(r => {
+                    const date = r.date;
+                    if (!dailyData[date]) { dailyData[date] = 0; }
+                    dailyData[date] += r.total_calories;
+                });
+                const chartData = Object.entries(dailyData)
+                    .map(([date, calories]) => ({ x: new Date(date.replace(/\//g, '-')), y: calories }))
+                    .sort((a, b) => a.x - b.x);
+                drawChart(chartData);
+                statusEl.textContent = '歷史紀錄載入完成。';
+            } catch (err) {
+                statusEl.textContent = `❌ 讀取紀錄失敗：${err.message}`;
+                drawChart([]);
+            }
+        }
+        async function handleRecordDelete(event) {
+            const target = event.target;
+            if (target.classList.contains('delete-btn')) {
+                const recordId = target.dataset.id;
+                if (recordId && confirm("確定要刪除此筆餐點紀錄？")) {
+                    try {
+                        await apiFetch(`/api/nutrition-records/${recordId}`, { method: 'DELETE' });
+                        alert('✅ 紀錄已刪除');
+                        await loadNutritionRecords();
+                    } catch (err) {
+                        alert(`❌ 刪除失敗：${err.message}`);
+                    }
+                }
+            }
+        }
+        function drawChart(data) {
+            const ctx = document.getElementById("nutritionChart").getContext("2d");
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    datasets: [{
+                        label: "每日總熱量 (kcal)",
+                        data: data,
+                        backgroundColor: "rgba(76,175,80,0.5)",
+                        borderColor: "#4caf50",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { type: 'time', time: { unit: 'day', tooltipFormat: 'yyyy/MM/dd', displayFormats: { day: 'MM/dd' } }, title: { display: true, text: '日期' } },
+                        y: { beginAtZero: true, title: { display: true, text: '熱量 (kcal)' } }
+                    }
+                }
+            });
+        }
+
+        // --- 3. 頁面載入時執行 ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // (此區塊不變，省略)
+            setupSaveLogic();
+            if (!idToken) {
+                statusEl.textContent = "❌ 請先登入才能查看或儲存歷史紀錄！";
+                document.getElementById('recordListBody').innerHTML = '<tr><td colspan="8">請先登入</td></tr>';
+                return;
+            }
+            try {
+                const profile = await apiFetch('/api/user-profile');
+                statusEl.textContent = `👤 ${profile.email || '使用者'} 的歷史紀錄：`;
+                await loadNutritionRecords();
+                document.getElementById('recordListBody').addEventListener('click', handleRecordDelete);
+            } catch (e) {
+                statusEl.textContent = '❌ 驗證失敗，請重新登入';
+                console.error(e);
+                sessionStorage.removeItem('firebaseIdToken');
+            }
+        });
+    </script>
 </body>
 
 </html>
