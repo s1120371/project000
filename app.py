@@ -1,5 +1,5 @@
-# app.py (方法二：同時載入兩個模型)
-# 包含使用者後台、AI 問答、BMI、成就、YOLOv8辨識 (雙模型)、FatSecret營養查詢
+# app.py (方法四：批次辨識 + 整合式營養紀錄)
+# 包含使用者後台、AI 問答、BMI、成就、YOLOv8辨識 (雙模型)、FatSecret營養查詢、營養歷史紀錄(整合)
 
 from flask import Flask, request, jsonify, send_from_directory, render_template
 import firebase_admin
@@ -21,6 +21,37 @@ import cv2
 import numpy as np
 import base64
 import uuid
+
+# --- ★ (新) 導入 LangChain 和 Google AI 套件 ---
+import os
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from dotenv import load_dotenv  # 導入 dotenv
+
+# --- ★★★ 關鍵修正：必須先「載入」才能「讀取」 ★★★ ---
+
+# 1. 先呼叫 load_dotenv()，它會去讀取 .env 檔案
+load_dotenv() 
+
+# 2. 現在才使用 os.getenv() 從環境變數中讀取
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# 3. 執行檢查
+if not GEMINI_API_KEY:
+    print("="*50)
+    print("錯誤：在 .env 檔案中找不到 'GEMINI_API_KEY'！")
+    print("請執行以下檢查：")
+    print("1. 確保 .env 檔案與 app.py 在同一個資料夾。")
+    print("2. 確保檔案名稱是 .env (沒有 .txt 副檔名)。")
+    print("3. 確保 .env 檔案內容是 GEMINI_API_KEY=... (沒有引號或空格)。")
+    print("="*50)
+    exit() # 找不到金鑰，直接停止程式
+else:
+    print("✅ 成功從 .env 載入 GEMINI_API_KEY。")
+    # 只有在成功找到 Key 之後，才設定這行
+    os.environ["GOOGLE_API_KEY"] = GEMINI_API_KEY
+# -----------------------------------
 
 # ------------------ 初始化設定 ------------------
 app = Flask(__name__)
@@ -75,7 +106,7 @@ API_BASE = "https://platform.fatsecret.com/rest/server.api"
 # ---------------------------------
 
 # --- 食物中英文字典 (定義兩個字典) ---
-# *** 請將您第一個模型的字典內容填入這裡 ***
+# (字典內容省略，與您上一個版本相同)
 item_translation_A = {
     'rice': '米飯',
     'fried cabbage': '炒高麗菜',
@@ -94,8 +125,6 @@ item_translation_A = {
     'Stir-fried carrots': '炒紅蘿蔔',
     'Stir fried carrots': '炒紅蘿蔔', # 處理同義詞
 }
-
-# *** 這是您第二次提供的大型字典，用於模型 B ***
 item_translation_B = {
     'rice': '米飯', 'eels on rice': '鰻魚飯', 'pilaf': '抓飯', 'chicken-\'n\'-egg on rice': '親子丼',
     'pork cutlet on rice': '豬排飯', 'beef curry': '牛肉咖哩', 'sushi': '壽司', 'chicken rice': '雞肉飯',
@@ -188,7 +217,6 @@ item_translation_B = {
 
 # --- 輔助函式：驗證 Token ---
 def verify_token(request):
-    # (省略...)
     id_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
     if not id_token:
         return None, (jsonify({'error': '缺少驗證資訊'}), 401)
@@ -198,6 +226,111 @@ def verify_token(request):
     except Exception as e:
         return None, (jsonify({'error': f'Token 無效或過期: {e}'}), 401)
 
+
+# --- 核心AI功能函式 (聊天用) ---
+def generate_llama_advice(user_query, user_profile, history_messages=None):
+    # (您原本的 chat AI 函式... 內容保持不變，省略)
+    system_prompt = """你是一個專業又親切的「健康管家 AI」。
+...
+"""
+    # (省略...)
+    return response['choices'][0]['message']['content']
+
+
+# --- ★ (新) 核心AI功能函式 (飲食評價用 - 改用 LangChain + Gemini) ---
+def generate_gemini_evaluation(user_profile, diet_data):
+    """
+    根據使用者資料和單次飲食紀錄，使用 LangChain + Gemini 產生個人化評價。
+    """
+    print("生成 AI 飲食評價 (使用 Google Gemini)...")
+
+    # (處理 user_profile 和 diet_data 的程式碼... 保持不變)
+    # 1. 處理使用者資料
+    goal_map = {
+        'weight-loss': '減重', 'muscle-gain': '增肌',
+        'control-sugar': '控制血糖', 'general-health': '維持一般健康'
+    }
+    diet_map = {
+        'omnivore': '一般葷食', 'lacto-ovo': '蛋奶素', 'vegan': '全素'
+    }
+    profile_text = f"""
+- 健康目標: {goal_map.get(user_profile.get('goal'), '未設定')}
+- 飲食習慣: {diet_map.get(user_profile.get('diet'), '未設定')}
+- 已知過敏原: {', '.join(user_profile.get('allergens', [])) or '無'}
+"""
+    # 2. 處理飲食數據
+    diet_text = f"""
+- 食物清單: {', '.join(diet_data.get('foods_list', []))}
+- 總熱量: {diet_data.get('total_calories')} kcal
+- 總蛋白質: {diet_data.get('total_protein')} g
+- 總脂肪: {diet_data.get('total_fat')} g
+- 總碳水: {diet_data.get('total_carbs')} g
+"""
+
+    # --- ★★★ 關鍵修正：暫時移除 Firebase 的環境變數 ★★★ ---
+    original_creds = os.environ.pop('GOOGLE_APPLICATION_CREDENTIALS', None)
+    
+    try:
+        # 組件 A: 語言模型
+        # 我們強制傳入 API Key，並使用您在 hello_langchain.py 中
+        # 已確認可以運作的模型名稱 "models/gemini-1.5-flash"
+        llm = ChatGoogleGenerativeAI(
+            model="models/gemini-2.5-flash", 
+            google_api_key=GEMINI_API_KEY  # 確保您在檔案頂部定義了 GEMINI_API_KEY
+        )
+        
+        # 組件 B: 提示模板 (PromptTemplate)
+        system_prompt = """你是一個專業的「健康管家 AI」。你的任務是根據使用者的「個人資料」和他們「剛剛儲存的飲食紀錄」，提供一段簡潔、專業、個人化的評價與建議。
+
+你必須嚴格遵守以下規則：
+1.  **唯一語言：你的所有回答都必須使用繁體中文。**
+2.  **核心任務：** 根據使用者的「健康目標」來評價這餐的營養（熱量、蛋白質等）是否合適。
+3.  **過敏原檢查：** **務必**檢查「食物清單」中是否有任何食物 *可能* 觸發使用者的「已知過敏原」。如果有，必須提出明確警告。
+4.  **語氣：** 保持溫暖、鼓勵，像一個專業的營養師。
+5.  **結構：**
+    * 先給予一點鼓勵（例如：很高興看到您記錄飲食！）。
+    * 針對「健康目標」進行分析。
+    * (如果需要) 提出「過敏原警告」。
+    * 最後提供 1-2 個具體的改進建議。
+"""
+        
+        prompt_template_str_with_vars = f"""{system_prompt}
+---
+**我的個人資料：**
+{{profile}}
+---
+**我儲存的飲食紀錄：**
+{{diet}}
+---
+請開始你的評價與建議：
+"""
+        
+        prompt = ChatPromptTemplate.from_template(prompt_template_str_with_vars)
+        output_parser = StrOutputParser()
+        chain = prompt | llm | output_parser
+
+        # 5. 執行「鏈」
+        print("正在呼叫 Google Gemini API (強制使用 AI Studio Key)...")
+        result = chain.invoke({
+            "profile": profile_text,
+            "diet": diet_text
+        })
+        
+        # --- ★★★ 關鍵修正：恢復環境變數 ★★★ ---
+        if original_creds:
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = original_creds
+            
+        return result
+
+    except Exception as e:
+        print(f"AI 評價生成失敗 (Gemini): {e}")
+        # --- ★★★ 關鍵修正：恢復環境變數 (即使失敗也要恢復) ★★★ ---
+        if original_creds:
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = original_creds
+            
+        if "API key not valid" in str(e):
+            return "抱歉，AI 評價服務無法連線。請檢查伺服器上的 GEMINI_API_KEY 是否設定正確。"
+        return f"抱歉，AI 評價服務目前暫時無法連線：{e}"
 
 # --- 核心AI功能函式 ---
 def generate_llama_advice(user_query, user_profile, history_messages=None):
@@ -275,7 +408,7 @@ def search_food_index(food_name):
 
 
 # ===============================================================
-# 路由 (修改 /predict 以處理雙模型)
+# 路由 (移除 /nutrition-history)
 # ===============================================================
 
 # --- 靜態網頁路由 ---
@@ -294,152 +427,151 @@ def bmi(): return render_template("bmi.html")
 @app.route('/achievements')
 def achievements(): return render_template("achievements.html")
 
-# --- YOLOv8 辨識與營養查詢路由 (*** 已修改為處理雙模型 ***) ---
+# --- ★ (移除) /nutrition-history 路由已被移除 ---
+# (此處無程式碼)
+
+# --- YOLOv8 辨識與營養查詢路由 (多張圖片) ---
 @app.route("/predict", methods=["POST"])
 def predict():
-    if 'image' not in request.files and 'file' not in request.files:
-        return render_template("nutrition.html", error="未上傳圖片")
+    files = request.files.getlist('image')
+    
+    if not files or all(f.filename == '' for f in files):
+        # *** 注意：這裡改為傳遞 all_results=[]，以便頁面能正常載入歷史紀錄 ***
+        return render_template("nutrition.html", error="未上傳任何圖片", all_results=[])
 
-    file = request.files.get('image') or request.files.get('file')
-    if not file or file.filename == '':
-        return render_template("nutrition.html", error="未選擇圖片")
+    all_results = []
 
     try:
-        # --- 影像處理 ---
-        image_bytes = file.read()
-        pil_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-        
-        # --- 儲存原始圖片 ---
-        filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
-        img_path = os.path.join(UPLOAD_FOLDER, filename)
-        pil_image.save(img_path) 
-        print(f"✅ 上傳圖片儲存於: {img_path}")
-        uploaded_image_web = img_path.replace("\\", "/")
+        for file in files:
+            if file.filename == '':
+                continue
 
-        # --- 初始化 OpenCV 圖像用於繪圖 ---
-        # *** 從 PIL 轉換一次即可，後續在其上疊加繪圖 ***
-        cv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+            # --- 影像處理 ---
+            image_bytes = file.read()
+            pil_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+            
+            # --- 儲存原始圖片 ---
+            filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[1]
+            img_path = os.path.join(UPLOAD_FOLDER, filename)
+            pil_image.save(img_path) 
+            print(f"✅ 上傳圖片儲存於: {img_path}")
+            uploaded_image_web = img_path.replace("\\", "/")
 
-        # --- 初始化結果列表 ---
-        all_detected_foods = [] # 合併後的偵測清單
-        all_food_infos = []     # 合併後的營養資訊
-        seen_foods_eng_names = set() # 跨模型追蹤已查詢的英文名
+            cv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-        # --- 執行模型 A 預測 ---
-        print("執行模型 A 預測...")
-        results_A = model_A(pil_image)
-        if results_A and results_A[0].boxes:
-            print(f"模型 A 找到 {len(results_A[0].boxes)} 個潛在物件")
-            for box in results_A[0].boxes:
-                conf = round(float(box.conf[0]), 2)
-                if conf < 0.5: continue
+            image_detected_foods = [] 
+            image_food_infos = []     
+            seen_foods_eng_names = set() 
 
-                cls = int(box.cls[0])
-                eng_name_A = model_A.names[cls].lower().replace("_", " ").replace("-", " ")
-                # *** 使用字典 A 進行翻譯 ***
-                chi_name_A = item_translation_A.get(eng_name_A, model_A.names[cls].capitalize())
+            # --- 執行模型 A 預測 ---
+            print("執行模型 A 預測...")
+            results_A = model_A(pil_image)
+            if results_A and results_A[0].boxes:
+                print(f"模型 A 找到 {len(results_A[0].boxes)} 個潛在物件")
+                for box in results_A[0].boxes:
+                    conf = round(float(box.conf[0]), 2)
+                    if conf < 0.5: continue
 
-                print(f"  模型 A: {eng_name_A} -> {chi_name_A} (信心度: {conf})")
+                    cls = int(box.cls[0])
+                    eng_name_A = model_A.names[cls].lower().replace("_", " ").replace("-", " ")
+                    chi_name_A = item_translation_A.get(eng_name_A, model_A.names[cls].capitalize())
 
-                # 加入偵測清單
-                all_detected_foods.append({'name': chi_name_A, 'confidence': f"{conf:.2f}", 'source': 'A'}) # 標示來源
+                    print(f"  模型 A: {eng_name_A} -> {chi_name_A} (信心度: {conf})")
+                    image_detected_foods.append({'name': chi_name_A, 'confidence': f"{conf:.2f}", 'source': 'A'})
 
-                # 繪製模型 A 的框 (藍色 BGR: 255, 0, 0)
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                label_A = f"{chi_name_A} {conf} (A)"
-                cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                cv2.putText(cv_image, label_A, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    label_A = f"{chi_name_A} {conf} (A)"
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.putText(cv_image, label_A, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-                # 查詢營養資訊 (如果未查詢過)
-                if eng_name_A not in seen_foods_eng_names:
-                    seen_foods_eng_names.add(eng_name_A)
-                    index_data_A = search_food_index(eng_name_A)
-                    if index_data_A:
-                         all_food_infos.append({
-                            'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
-                            'food_description': index_data_A['food_description'],
-                            'index': index_data_A['index'], 'source': 'A' # 標示來源
-                        })
-                    else:
-                        all_food_infos.append({
-                            'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
-                            'food_description': "查無此食物的詳細營養資訊。",
-                            'index': None, 'source': 'A' # 標示來源
-                        })
+                    if eng_name_A not in seen_foods_eng_names:
+                        seen_foods_eng_names.add(eng_name_A)
+                        index_data_A = search_food_index(eng_name_A)
+                        if index_data_A:
+                            image_food_infos.append({
+                                'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
+                                'food_description': index_data_A['food_description'],
+                                'index': index_data_A['index'], 'source': 'A'
+                            })
+                        else:
+                            image_food_infos.append({
+                                'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
+                                'food_description': "查無此食物的詳細營養資訊。",
+                                'index': None, 'source': 'A'
+                            })
 
-        # --- 執行模型 B 預測 ---
-        print("執行模型 B 預測...")
-        results_B = model_B(pil_image)
-        if results_B and results_B[0].boxes:
-            print(f"模型 B 找到 {len(results_B[0].boxes)} 個潛在物件")
-            # print(f"  [Debug B] results_B[0].boxes 的內容: {results_B[0].boxes}")
-            for box in results_B[0].boxes:
-                conf = round(float(box.conf[0]), 2)
-                if conf < 0.2: continue
+            # --- 執行模型 B 預測 ---
+            print("執行模型 B 預測...")
+            results_B = model_B(pil_image)
+            if results_B and results_B[0].boxes:
+                print(f"模型 B 找到 {len(results_B[0].boxes)} 個潛在物件")
+                for box in results_B[0].boxes:
+                    conf = round(float(box.conf[0]), 2)
+                    if conf < 0.2: continue
 
-                cls = int(box.cls[0])
-                eng_name_B = model_B.names[cls].lower().replace("_", " ").replace("-", " ")
-                # *** 使用字典 B 進行翻譯 ***
-                chi_name_B = item_translation_B.get(eng_name_B, model_B.names[cls].capitalize())
+                    cls = int(box.cls[0])
+                    eng_name_B = model_B.names[cls].lower().replace("_", " ").replace("-", " ")
+                    chi_name_B = item_translation_B.get(eng_name_B, model_B.names[cls].capitalize())
 
-                print(f"  模型 B: {eng_name_B} -> {chi_name_B} (信心度: {conf})")
+                    print(f"  模型 B: {eng_name_B} -> {chi_name_B} (信心度: {conf})")
+                    image_detected_foods.append({'name': chi_name_B, 'confidence': f"{conf:.2f}", 'source': 'B'})
 
-                # 加入偵測清單
-                all_detected_foods.append({'name': chi_name_B, 'confidence': f"{conf:.2f}", 'source': 'B'}) # 標示來源
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    label_B = f"{chi_name_B} {conf} (B)"
+                    text_y = y1 - 30 if y1 > 30 else y1 + 15
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(cv_image, label_B, (x1, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-                # 繪製模型 B 的框 (綠色 BGR: 0, 255, 0) - *** 在已繪製 A 的圖上繼續畫 ***
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                label_B = f"{chi_name_B} {conf} (B)"
-                # 稍微調整 Y 座標以避免與模型 A 的標籤重疊
-                text_y = y1 - 30 if y1 > 30 else y1 + 15
-                cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(cv_image, label_B, (x1, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    if eng_name_B not in seen_foods_eng_names:
+                        seen_foods_eng_names.add(eng_name_B)
+                        index_data_B = search_food_index(eng_name_B)
+                        if index_data_B:
+                            image_food_infos.append({
+                                'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
+                                'food_description': index_data_B['food_description'],
+                                'index': index_data_B['index'], 'source': 'B'
+                            })
+                        else:
+                            image_food_infos.append({
+                                'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
+                                'food_description': "查無此食物的詳細營養資訊。",
+                                'index': None, 'source': 'B'
+                            })
 
-                # 查詢營養資訊 (如果未查詢過)
-                if eng_name_B not in seen_foods_eng_names:
-                    seen_foods_eng_names.add(eng_name_B)
-                    index_data_B = search_food_index(eng_name_B)
-                    if index_data_B:
-                         all_food_infos.append({
-                            'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
-                            'food_description': index_data_B['food_description'],
-                            'index': index_data_B['index'], 'source': 'B' # 標示來源
-                        })
-                    else:
-                        all_food_infos.append({
-                            'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
-                            'food_description': "查無此食物的詳細營養資訊。",
-                            'index': None, 'source': 'B' # 標示來源
-                        })
+            if not image_detected_foods:
+                image_detected_foods = [{'name': '未偵測到任何食物', 'confidence': 'N/A', 'source': '-'}]
 
-        # --- 如果兩個模型都沒偵測到 ---
-        if not all_detected_foods:
-             all_detected_foods = [{'name': '未偵測到任何食物', 'confidence': 'N/A', 'source': '-'}]
+            result_filename = f"result_combined_{uuid.uuid4()}.jpg"
+            result_img_path = os.path.join(RESULT_FOLDER, result_filename)
+            cv2.imwrite(result_img_path, cv_image)
+            print(f"✅ 合併偵測結果儲存於: {result_img_path}")
+            result_image_web = result_img_path.replace("\\", "/")
 
-        # --- 儲存最終繪製結果圖片 ---
-        result_filename = f"result_combined_{uuid.uuid4()}.jpg"
-        result_img_path = os.path.join(RESULT_FOLDER, result_filename)
-        # *** 使用 cv_image (已包含兩個模型的框) 儲存 ***
-        cv2.imwrite(result_img_path, cv_image)
-        print(f"✅ 合併偵測結果儲存於: {result_img_path}")
-        result_image_web = result_img_path.replace("\\", "/")
+            all_results.append({
+                "uploaded_image": uploaded_image_web,
+                "result_image": result_image_web,
+                "detected_foods": image_detected_foods,
+                "food_infos": image_food_infos
+            })
 
-        # --- 回傳所有合併後的資料到前端 ---
-        return render_template("nutrition.html",
-                               uploaded_image=uploaded_image_web,
-                               result_image=result_image_web,
-                               detected_foods=all_detected_foods, # 合併後的列表
-                               food_infos=all_food_infos)        # 合併後的列表
+        return render_template("nutrition.html", all_results=all_results)
 
     except Exception as e:
         print(f"辨識過程中發生錯誤: {e}")
-        return render_template("nutrition.html", error=f"處理過程中發生錯誤: {e}")
+        # *** 確保即使出錯，頁面也能載入歷史紀錄 ***
+        return render_template("nutrition.html", error=f"處理過程中發生錯誤: {e}", all_results=[])
 # ---------------------------------
 
 
 # --- API 路由 (使用者後台) ---
-# (以下所有 /api/... 路由保持不變，省略以節省空間)
-# ...
+# ( ... /api/register, /api/login, /ask, /api/chat-history, ... 保持不變 ... )
+# ( ... /api/user-profile, /api/update-password, /api/bmi-records, ... 保持不變 ... )
+# ( ... /api/achievement-goals, /api/achievement-records, ... 保持不變 ... )
+# ( ... /api/nutrition-records (GET/POST), /api/nutrition-records/<record_id> (DELETE) 保持不變 ... )
+
+# 複製所有您原本的 API 路由到這裡...
+# (這裡我只保留幾個範例，請確保您複製了所有 API 路由)
+
 @app.route('/api/register', methods=['POST'])
 def api_register():
     data = request.json
@@ -544,7 +676,7 @@ def user_profile():
 
     if request.method == 'POST':
         update_data = request.json
-        update_data.pop('email', None) # 不允許透過此 API 更新 Email
+        update_data.pop('email', None) 
         update_data['updatedAt'] = firestore.SERVER_TIMESTAMP
         user_ref.set(update_data, merge=True)
         return jsonify({'message': '資料更新成功'}), 200
@@ -576,18 +708,16 @@ def bmi_records():
         return jsonify(records), 200
     if request.method == 'POST':
         data = request.json
-        # 可以在這裡加入 BMI 計算邏輯
         try:
             height_m = float(data['height']) / 100
             weight_kg = float(data['weight'])
             bmi_value = round(weight_kg / (height_m ** 2), 2)
-            data['bmi'] = bmi_value # 將計算出的 BMI 加入紀錄
+            data['bmi'] = bmi_value 
         except (ValueError, KeyError, ZeroDivisionError):
-            data['bmi'] = None # 如果無法計算，設為 None
-        data['timestamp'] = firestore.SERVER_TIMESTAMP # 加入時間戳
+            data['bmi'] = None 
+        data['timestamp'] = firestore.SERVER_TIMESTAMP 
         records_ref.add(data)
         return jsonify({'message': 'BMI 紀錄已儲存'}), 201
-
 @app.route('/api/bmi-records/<record_id>', methods=['DELETE'])
 def delete_bmi_record(record_id):
     decoded_token, error = verify_token(request)
@@ -601,7 +731,6 @@ def delete_bmi_record(record_id):
 
 @app.route('/api/achievement-goals', methods=['GET', 'POST'])
 def achievement_goals():
-    # (省略...)
     decoded_token, error = verify_token(request)
     if error: return error
     uid = decoded_token['uid']
@@ -622,7 +751,6 @@ def achievement_goals():
 
 @app.route('/api/achievement-records/<date_str>', methods=['GET', 'POST', 'DELETE'])
 def achievement_record_by_date(date_str):
-    # (省略...)
     decoded_token, error = verify_token(request)
     if error: return error
     uid = decoded_token['uid']
@@ -632,19 +760,19 @@ def achievement_record_by_date(date_str):
         doc = record_ref.get()
         if doc.exists: return jsonify(doc.to_dict())
         default_record = {'date': date_str, 'waterMl': 0, 'exerciseMin': 0}
-        record_ref.set(default_record) # 如果當天記錄不存在，創建一個
+        record_ref.set(default_record) 
         return jsonify(default_record)
     if request.method == 'POST':
         update_data, current_doc = request.json, record_ref.get()
-        if not current_doc.exists: # 如果記錄不存在先創建
+        if not current_doc.exists: 
              record_ref.set({'date': date_str, 'waterMl': 0, 'exerciseMin': 0})
-             current_doc = record_ref.get() # 重新獲取
+             current_doc = record_ref.get() 
 
         current_data = current_doc.to_dict()
         new_water = max(0, current_data.get('waterMl', 0) + update_data.get('addWater', 0))
         new_exercise = max(0, current_data.get('exerciseMin', 0) + update_data.get('addExercise', 0))
         record_ref.set({'waterMl': new_water, 'exerciseMin': new_exercise, 'updatedAt': firestore.SERVER_TIMESTAMP}, merge=True)
-        return jsonify({'waterMl': new_water, 'exerciseMin': new_exercise}) # 回傳更新後的值
+        return jsonify({'waterMl': new_water, 'exerciseMin': new_exercise}) 
     if request.method == 'DELETE':
         try:
              record_ref.delete()
@@ -654,20 +782,17 @@ def achievement_record_by_date(date_str):
 
 @app.route('/api/achievement-history', methods=['GET'])
 def get_achievement_history():
-    # (省略...)
     decoded_token, error = verify_token(request)
     if error: return error
     uid = decoded_token['uid']
 
-    limit = int(request.args.get('limit', 7)) # 從查詢參數獲取 limit
+    limit = int(request.args.get('limit', 7)) 
     docs = db.collection('users').document(uid).collection('achievementRecords').order_by("date", direction=Query.DESCENDING).limit(limit).stream()
-    # 將 Firestore DocumentSnapshot 轉為字典列表
     return jsonify([{'id': doc.id, **doc.to_dict()} for doc in docs]), 200
 
 
 @app.route('/api/badges', methods=['GET', 'POST'])
 def handle_badges():
-    # (省略...)
     decoded_token, error = verify_token(request)
     if error: return error
     uid = decoded_token['uid']
@@ -675,20 +800,17 @@ def handle_badges():
     badges_ref = db.collection('users').document(uid).collection('badges')
 
     if request.method == 'GET':
-        # 回傳所有徽章及其狀態
         return jsonify({doc.id: doc.to_dict() for doc in badges_ref.stream()})
 
     if request.method == 'POST':
-        # --- 重新評估徽章解鎖狀態 ---
         user_doc = db.collection('users').document(uid).get()
         if not user_doc.exists:
             return jsonify({'error': 'User not found'}), 404
 
         user_data = user_doc.to_dict()
-        gw = user_data.get('goalWater', 2000) # 水目標
-        ge = user_data.get('goalExercise', 30) # 運動目標
+        gw = user_data.get('goalWater', 2000) 
+        ge = user_data.get('goalExercise', 30) 
 
-        # 檢查 "今天" (或指定日期) 是否達標
         date_str = request.json.get('date', datetime.now().strftime('%Y-%m-%d'))
         today_rec_doc = db.collection('users').document(uid).collection('achievementRecords').document(date_str).get()
 
@@ -698,12 +820,10 @@ def handle_badges():
             water_ok = rec.get('waterMl', 0) >= gw
             ex_ok = rec.get('exerciseMin', 0) >= ge
 
-        # 更新單日徽章
         badges_ref.document('water_2l_day').set({'unlocked': water_ok, 'at': date_str if water_ok else None}, merge=True)
         badges_ref.document('exercise_30m_day').set({'unlocked': ex_ok, 'at': date_str if ex_ok else None}, merge=True)
         badges_ref.document('double_goal_day').set({'unlocked': (water_ok and ex_ok), 'at': date_str if (water_ok and ex_ok) else None}, merge=True)
 
-        # 檢查連續 3 天達標 (包含今天)
         streak_ok = True
         streak_date = None
         for i in range(3):
@@ -712,12 +832,89 @@ def handle_badges():
             if not r_doc.exists or r_doc.to_dict().get('waterMl', 0) < gw or r_doc.to_dict().get('exerciseMin', 0) < ge:
                 streak_ok = False
                 break
-            if i == 0: # 如果第一天就檢查通過，記錄當天日期
+            if i == 0: 
                 streak_date = check_date
 
         badges_ref.document('streak_3').set({'unlocked': streak_ok, 'at': streak_date if streak_ok else None}, merge=True)
 
         return jsonify({'message': '徽章評估完成'}), 200
+
+
+# --- ★ (新) AI 飲食評價 API ---
+@app.route('/api/evaluate-diet', methods=['POST'])
+def api_evaluate_diet():
+    decoded_token, error = verify_token(request)
+    if error: return error
+    uid = decoded_token['uid']
+    
+    # 1. 獲取前端傳來的飲食數據
+    diet_data = request.json
+    if not diet_data or 'total_calories' not in diet_data:
+        return jsonify({'error': '缺少飲食數據'}), 400
+
+    # 2. 獲取使用者的個人資料
+    try:
+        user_doc = db.collection('users').document(uid).get()
+        if not user_doc.exists:
+            return jsonify({'error': '找不到使用者資料'}), 404
+        user_profile = user_doc.to_dict()
+
+        # 3. 將兩份資料交給 AI 處理
+        # --- ★★★ 關鍵修改 ★★★ ---
+        # 呼叫新的 Gemini 函式，而不是舊的 Llama 函式
+        evaluation_text = generate_gemini_evaluation(user_profile, diet_data)
+        # ----------------------------
+        
+        return jsonify({'evaluation': evaluation_text}), 200
+
+    except Exception as e:
+        print(f"評價 API 發生錯誤: {e}")
+        return jsonify({'error': str(e)}), 500
+    
+
+# --- ★ (新) 營養歷史紀錄 API (保持不變) ---
+@app.route('/api/nutrition-records', methods=['GET', 'POST'])
+def api_nutrition_records():
+    decoded_token, error = verify_token(request)
+    if error: return error
+    uid = decoded_token['uid']
+    
+    records_ref = db.collection('users').document(uid).collection('nutritionRecords')
+
+    if request.method == 'GET':
+        try:
+            docs = records_ref.order_by("timestamp", direction=Query.DESCENDING).stream()
+            records = [{'id': doc.id, **doc.to_dict()} for doc in docs]
+            return jsonify(records), 200
+        except Exception as e:
+            return jsonify({'error': f'讀取紀錄失敗: {str(e)}'}), 500
+
+    if request.method == 'POST':
+        try:
+            data = request.json
+            if not data.get('foods_list') or 'total_calories' not in data:
+                 return jsonify({'error': '缺少食物列表或總熱量'}), 400
+            
+            data['timestamp'] = firestore.SERVER_TIMESTAMP 
+            doc_ref = records_ref.add(data)
+            return jsonify({'message': '營養紀錄已儲存', 'doc_id': doc_ref[1].id}), 201
+        except Exception as e:
+            return jsonify({'error': f'儲存失敗: {str(e)}'}), 500
+
+# --- ★ (新) 營養歷史紀錄刪除 API (保持不變) ---
+@app.route('/api/nutrition-records/<record_id>', methods=['DELETE'])
+def delete_nutrition_record(record_id):
+    decoded_token, error = verify_token(request)
+    if error: return error
+    uid = decoded_token['uid']
+
+    try:
+        db.collection('users').document(uid).collection('nutritionRecords').document(record_id).delete()
+        return jsonify({'message': '紀錄已刪除'}), 200
+    except Exception as e: 
+        return jsonify({'error': f'刪除失敗: {str(e)}'}), 500
+
+
 # ------------------ 啟動伺服器 ------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
