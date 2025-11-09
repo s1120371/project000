@@ -473,29 +473,41 @@ def predict():
                     if conf < 0.5: continue
 
                     cls = int(box.cls[0])
+                    # 修正 1：取得英文名稱
                     eng_name_A = model_A.names[cls].lower().replace("_", " ").replace("-", " ")
-                    chi_name_A = item_translation_A.get(eng_name_A, model_A.names[cls].capitalize())
+                    # 修正 2：註解掉翻譯行
+                    # eng_name_A = item_translation_A.get(eng_name_A, model_A.names[cls].capitalize())
 
-                    print(f"  模型 A: {eng_name_A} -> {chi_name_A} (信心度: {conf})")
-                    image_detected_foods.append({'name': chi_name_A, 'confidence': f"{conf:.2f}", 'source': 'A'})
+                    print(f"  模型 A: {eng_name_A} (信心度: {conf})") # 使用英文
+                    image_detected_foods.append({'name': eng_name_A, 'confidence': f"{conf:.2f}", 'source': 'A'}) # 使用英文
 
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    label_A = f"{chi_name_A} {conf} (A)"
-                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(cv_image, label_A, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    label_A = f"{eng_name_A} {conf} (A)" # 使用英文
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 畫框
+
+                    # 修正 3：使用新的「白框文字」程式碼
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.6
+                    pos = (x1, y1 - 10) # <-- ★ 關鍵行：定義 pos
+                    border_color = (255, 255, 255) # 白色 (B,G,R)
+                    main_color = (255, 0, 0)       # 藍色 (B,G,R)
+                    # 1. 先畫白色粗體字 (當作外框)
+                    cv2.putText(cv_image, label_A, pos, font, font_scale, border_color, 5, cv2.LINE_AA)
+                    # 2. 再畫藍色細體字 (蓋在上面)
+                    cv2.putText(cv_image, label_A, pos, font, font_scale, main_color, 2, cv2.LINE_AA)
 
                     if eng_name_A not in seen_foods_eng_names:
                         seen_foods_eng_names.add(eng_name_A)
                         index_data_A = search_food_index(eng_name_A)
                         if index_data_A:
                             image_food_infos.append({
-                                'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
+                                'food_name': eng_name_A, 'confidence': f"{conf:.2f}", # 使用英文
                                 'food_description': index_data_A['food_description'],
                                 'index': index_data_A['index'], 'source': 'A'
                             })
                         else:
                             image_food_infos.append({
-                                'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
+                                'food_name': eng_name_A, 'confidence': f"{conf:.2f}", # 使用英文
                                 'food_description': "查無此食物的詳細營養資訊。",
                                 'index': None, 'source': 'A'
                             })
@@ -510,30 +522,43 @@ def predict():
                     if conf < 0.2: continue
 
                     cls = int(box.cls[0])
+                    # 修正 1：取得英文名稱
                     eng_name_B = model_B.names[cls].lower().replace("_", " ").replace("-", " ")
-                    chi_name_B = item_translation_B.get(eng_name_B, model_B.names[cls].capitalize())
+                    # 修正 2：註解掉翻譯行
+                    # eng_name_B = item_translation_B.get(eng_name_B, model_B.names[cls].capitalize())
 
-                    print(f"  模型 B: {eng_name_B} -> {chi_name_B} (信心度: {conf})")
-                    image_detected_foods.append({'name': chi_name_B, 'confidence': f"{conf:.2f}", 'source': 'B'})
+                    print(f"  模型 B: {eng_name_B} (信心度: {conf})") # 使用英文
+                    image_detected_foods.append({'name': eng_name_B, 'confidence': f"{conf:.2f}", 'source': 'B'}) # 使用英文
 
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    label_B = f"{chi_name_B} {conf} (B)"
+                    label_B = f"{eng_name_B} {conf} (B)" # 使用英文
                     text_y = y1 - 30 if y1 > 30 else y1 + 15
-                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(cv_image, label_B, (x1, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 畫框
+
+                    # 修正3使用新的「白框文字」程式碼
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.6
+                    pos = (x1, text_y) # <-- ★ 關鍵行：定義 pos
+                    border_color = (255, 255, 255) # 白色 (B,G,R)
+                    main_color = (255, 0, 0)       # 藍色 (B,G,R)
+                    # 1. 先畫白色粗體字 (當作外框)
+                    cv2.putText(cv_image, label_B, pos, font, font_scale, border_color, 5, cv2.LINE_AA)
+                    # 2. 再畫藍色細體字 (蓋在上面)
+                    cv2.putText(cv_image, label_B, pos, font, font_scale, main_color, 2, cv2.LINE_AA)
+
 
                     if eng_name_B not in seen_foods_eng_names:
                         seen_foods_eng_names.add(eng_name_B)
                         index_data_B = search_food_index(eng_name_B)
                         if index_data_B:
                             image_food_infos.append({
-                                'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
+                                'food_name': eng_name_B, 'confidence': f"{conf:.2f}", # 使用英文
                                 'food_description': index_data_B['food_description'],
                                 'index': index_data_B['index'], 'source': 'B'
                             })
                         else:
                             image_food_infos.append({
-                                'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
+                                'food_name': eng_name_B, 'confidence': f"{conf:.2f}", # 使用英文
                                 'food_description': "查無此食物的詳細營養資訊。",
                                 'index': None, 'source': 'B'
                             })
