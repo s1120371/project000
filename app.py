@@ -398,10 +398,16 @@ def search_food_index(food_name):
         if "foods" in data and "food" in data["foods"] and data["foods"]["food"]:
             food_item = data["foods"]["food"]
             if isinstance(food_item, list): food_item = food_item[0]
+            
+            # ★ 修正 1：啟用翻譯
             food_name_cn = translate_text(food_item.get("food_name"))
+            
             desc_cn = translate_text(food_item.get("food_description"))
             index_data = parse_index(food_item.get("food_description", ""))
+            
+            # ★ 修正 2：回傳中文名稱
             return {"food_name": food_name_cn, "food_description": desc_cn, "index": index_data}
+            
     except requests.exceptions.RequestException as e: print(f"查詢 API 時發生錯誤 ({food_name}): {e}")
     return None
 # ---------------------------------
@@ -501,7 +507,7 @@ def predict():
                         index_data_A = search_food_index(eng_name_A)
                         if index_data_A:
                             image_food_infos.append({
-                                'food_name': eng_name_A, 'confidence': f"{conf:.2f}", # 使用英文
+                                'food_name': index_data_A['food_name'], 'confidence': f"{conf:.2f}", # <-- ★ 修正
                                 'food_description': index_data_A['food_description'],
                                 'index': index_data_A['index'], 'source': 'A'
                             })
@@ -552,7 +558,7 @@ def predict():
                         index_data_B = search_food_index(eng_name_B)
                         if index_data_B:
                             image_food_infos.append({
-                                'food_name': eng_name_B, 'confidence': f"{conf:.2f}", # 使用英文
+                                'food_name': index_data_B['food_name'], 'confidence': f"{conf:.2f}", # <-- ★ 修正
                                 'food_description': index_data_B['food_description'],
                                 'index': index_data_B['index'], 'source': 'B'
                             })
