@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <style>
-        /* (CSS 樣式保持不變... 省略以節省空間) */
         @font-face {
             font-family: 'Zpix';
             src: url('/static/zpix.ttf') format('truetype');
@@ -163,10 +162,8 @@
             font-size: 14px;
         }
 
-        /* --- ★ (新) AI 評價框樣式 --- */
         #aiEvaluationBox {
             background-color: #f8f9fa;
-            /* 淺灰色背景 */
             border: 1px solid #dee2e6;
             text-align: left;
             padding: 20px;
@@ -176,19 +173,38 @@
 
         #aiEvaluationBox h5 {
             color: #0d6efd;
-            /* 藍色標題 */
         }
 
         #aiEvaluationContent {
             line-height: 1.7;
             white-space: pre-wrap;
-            /* 保留 AI 回傳的換行 */
+        }
+
+        /* ★ (新) 進度條 CSS */
+        .progress {
+            height: 14px;
+            background: #edf2f7;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e53935 0%, #ff6b6b 100%);
+            transition: width .3s ease;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
         }
     </style>
 </head>
 
 <body>
-    <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主畫面</a>
+    <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
+            height="25" style="vertical-align: middle;"> 返回主畫面</a>
 
     <div class="container py-5">
         <div class="text-center mb-5">
@@ -198,10 +214,11 @@
         </div>
 
         <div class="card shadow-sm mb-4 upload-card">
-            <form action="/predict" method="POST" enctype="multipart/form-data">
+            <form action="/predict" method="POST" enctype="multipart/form-data" id="predict-form">
                 <div class="input-group">
-                    <input type="file" class="form-control" name="image" required accept="image/*" multiple>
-                    <button type="submit" class="btn btn-primary fw-bold">上傳並辨識</button>
+                    <input type="file" class="form-control" name="image" required accept="image/*" multiple
+                        id="file-input">
+                    <button type="submit" class="btn btn-primary fw-bold" id="predict-btn">上傳並辨識</button>
                 </div>
             </form>
         </div>
@@ -212,6 +229,24 @@
         </div>
         {% endif %}
 
+        <div class="card" id="calorie-progress-card">
+            <h3>🔥 今日熱量進度</h3>
+            <div class="row" style="align-items: center; gap: 10px; display: flex;">
+                <strong>已攝取</strong>
+                <div id="calNow" style="font-weight:700; font-size: 1.2em;">0</div>
+                <div>kcal</div>
+            </div>
+            <div class="progress" style="margin:10px 0 6px;">
+                <div id="calBar" class="bar"></div>
+            </div>
+            <div class="row" style="justify-content: space-between; display: flex;">
+                <small>目標：<span id="calGoalText">2000</span> kcal</small>
+                <small id="calPct" style="font-weight: 700;">0%</small>
+            </div>
+            <small id="calInfo" style="margin-top: 10px; display: block; color: #555;">
+                ... 正在載入您的個資與BMI以計算TDEE...
+            </small>
+        </div>
         {% if all_results and all_results|length > 0 %}
 
         <div class="save-section" style="top: 10px; z-index: 900;">
@@ -219,8 +254,8 @@
             <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕。</p>
             <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
             <div id="saveStatus"></div>
-
         </div>
+
         <div class="card" id="aiEvaluationBox" style="display:none; margin-top: 20px;">
             <div class="card-body">
                 <h5 class="card-title">🤖 AI 飲食分析</h5>
@@ -228,6 +263,7 @@
                     style="white-space: pre-wrap; font-family: 'Zpix', sans-serif; line-height: 1.7;">...AI 正在分析中...</pre>
             </div>
         </div>
+
         <hr class="my-4">
 
         {% for res in all_results %}
@@ -309,7 +345,6 @@
         {% endfor %}
         {% endif %}
 
-
         <hr class="my-5">
         <div class="text-center">
             <h2 class="display-6 fw-bold">📈 營養攝取歷史</h2>
@@ -346,9 +381,92 @@
         const idToken = sessionStorage.getItem('firebaseIdToken');
         let chartInstance = null;
 
+        // --- ★ (新) TDEE 計算輔助函式 ---
+        function calculateAge(birthdateString) {
+            if (!birthdateString) return 30; // 預設 30 歲
+            const birthDate = new Date(birthdateString);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age || 30;
+        }
+
+        function calculateTDEE(profile, bmi) {
+            if (!profile || !bmi) return 2000; // 預設 2000
+
+            const age = calculateAge(profile.birthdate);
+            const height = bmi.height; // cm
+            const weight = bmi.weight; // kg
+            const gender = profile.gender || '男';
+            const goal = profile.goal || '一般健康';
+
+            let bmr = 0;
+            if (gender === '男') {
+                bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+            } else if (gender === '女') {
+                bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+            } else {
+                // '其他' 性別，取平均值
+                bmr = ((88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)) +
+                    (447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age))) / 2;
+            }
+
+            // TDEE = BMR * 活動因子 * 目標因子
+            const activityFactor = 1.375; // 預設為輕度活動
+
+            let goalFactor = 1.0;
+            if (goal === '減重') goalFactor = 0.85;
+            if (goal === '增肌') goalFactor = 1.15;
+
+            const tdee = bmr * activityFactor * goalFactor;
+            return tdee < 1200 ? 1200 : tdee; // 確保最低不小於 1200
+        }
+        // --- ★ (新) 輔助函式結束 ---
+
+        // --- ★ (新) 熱量進度條渲染函式 ---
+        function renderCalorieProgress(profile, latestBmi, allNutritionRecords) {
+            const calNowEl = document.getElementById('calNow');
+            const calGoalEl = document.getElementById('calGoalText');
+            const calBarEl = document.getElementById('calBar');
+            const calPctEl = document.getElementById('calPct');
+            const calInfoEl = document.getElementById('calInfo');
+
+            // ★ 錯誤修正：檢查元素是否存在
+            if (!calNowEl || !calGoalEl || !calBarEl || !calPctEl || !calInfoEl) {
+                console.error("無法渲染熱量條：缺少 HTML 元素。");
+                return;
+            }
+
+            if (!profile || !latestBmi) {
+                calInfoEl.textContent = "缺少個資或BMI資料，無法計算熱量目標。";
+                return;
+            }
+
+            // 1. 計算熱量目標 (TDEE)
+            const calorieGoal = calculateTDEE(profile, latestBmi);
+            calGoalEl.textContent = calorieGoal.toFixed(0);
+
+            // 2. 計算今天已攝取
+            const todayStr = new Date().toLocaleDateString('zh-TW'); // "2025/11/11"
+            const todayIntake = allNutritionRecords
+                .filter(r => r.date === todayStr)
+                .reduce((sum, r) => sum + r.total_calories, 0);
+
+            calNowEl.textContent = todayIntake.toFixed(0);
+
+            // 3. 更新進度條
+            const cPct = Math.min(100, Math.round((todayIntake / calorieGoal) * 100));
+            calPctEl.textContent = `${cPct}%`;
+            calBarEl.style.width = `${cPct}%`;
+            calInfoEl.textContent = `(TDEE目標是根據您的個資與最新BMI計算) ${latestBmi.height}cm / ${latestBmi.weight}kg`;
+        }
+
+
         // --- API 輔助函式 ---
         async function apiFetch(endpoint, options = {}) {
-            // (此函式內容不變，省略)
             const headers = { 'Content-Type': 'application/json', ...options.headers };
             if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
             const response = await fetch(endpoint, { ...options, headers });
@@ -360,12 +478,10 @@
             return response.json();
         }
 
-        // --- 1. 處理儲存邏輯 (*** ★ 修改函式 ***) ---
+        // --- 1. 處理儲存邏輯 ---
         function setupSaveLogic() {
             const saveButton = document.getElementById('saveButton');
             const saveStatus = document.getElementById('saveStatus');
-
-            // ★ (新) 取得 AI 評價框的 DOM
             const aiBox = document.getElementById('aiEvaluationBox');
             const aiContent = document.getElementById('aiEvaluationContent');
 
@@ -400,7 +516,6 @@
                         foods_list.push(name);
                     });
 
-                    // 這是我們要傳送給兩個 API 的資料
                     const recordData = {
                         date: new Date().toLocaleDateString('zh-TW'),
                         time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }),
@@ -412,7 +527,6 @@
                     };
 
                     setStatus('儲存中...', 'info');
-                    // ★ (新) 顯示 AI 框並顯示讀取中
                     aiBox.style.display = 'block';
                     aiContent.textContent = '...餐點儲存中，AI 正在準備分析...';
 
@@ -426,19 +540,17 @@
                         setStatus(`✅ 儲存成功！(共 ${foods_list.length} 項食物)`, 'success');
                         checkedItems.forEach(item => item.checked = false);
 
-                        // 儲存成功後，立刻重新載入歷史紀錄
-                        await loadNutritionRecords();
+                        // ★ (新) 儲存成功後，立刻重新載入所有資料 (包括熱量條)
+                        await loadAllData();
 
-                        // --- ★ (新) 步驟二：呼叫 AI 評價 ---
+                        // --- 步驟二：呼叫 AI 評價 ---
                         aiContent.textContent = '...餐點已儲存，AI 正在分析您的飲食...';
 
                         try {
                             const evalResponse = await apiFetch('/api/evaluate-diet', {
                                 method: 'POST',
-                                body: JSON.stringify(recordData) // 使用相同的 recordData
+                                body: JSON.stringify(recordData)
                             });
-
-                            // 將 AI 回傳的文字（包含換行）顯示出來
                             aiContent.textContent = evalResponse.evaluation;
 
                         } catch (evalErr) {
@@ -447,7 +559,7 @@
 
                     } catch (err) {
                         setStatus(`❌ 儲存失敗：${err.message}`, 'error');
-                        aiBox.style.display = 'none'; // 儲存失敗就隱藏 AI 框
+                        aiBox.style.display = 'none';
                     }
                 });
             }
@@ -460,12 +572,65 @@
             }
         }
 
+        // --- ★ (新) 4. 處理上傳旋轉動畫 ---
+        function setupUploadSpinner() {
+            const form = document.getElementById('predict-form');
+            const button = document.getElementById('predict-btn');
+            const fileInput = document.getElementById('file-input');
+
+            if (form && button && fileInput) {
+                form.addEventListener('submit', function (event) {
+
+                    if (fileInput.files.length === 0) {
+                        return;
+                    }
+
+                    // 禁用按鈕並顯示 spinner
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        AI 辨識中...
+                    `;
+
+                    // 禁用檔案選擇器
+                    //fileInput.disabled = true;
+                });
+            }
+        }
+
+
         // --- 2. 處理歷史紀錄載入、繪圖、刪除 ---
-        // (此區塊 loadNutritionRecords, handleRecordDelete, drawChart 函式皆保持不變，省略)
         const statusEl = document.getElementById('history-status');
-        async function loadNutritionRecords() {
+
+        // ★ (新) 獨立出一個函式來載入所有資料
+        async function loadAllData() {
             try {
-                const records = await apiFetch('/api/nutrition-records');
+                // ★ 修正：確保 apiFetch 支援 ?limit=1
+                const [profile, bmiRecords, nutritionRecords] = await Promise.all([
+                    apiFetch('/api/user-profile'),
+                    apiFetch('/api/bmi-records?limit=1'), // app.py 必須支援 limit
+                    apiFetch('/api/nutrition-records')
+                ]);
+
+                statusEl.textContent = `👤 ${profile.email || '使用者'} 的歷史紀錄：`;
+                const latestBmi = (bmiRecords && bmiRecords.length > 0) ? bmiRecords[0] : null;
+
+                // (重新) 渲染熱量條
+                renderCalorieProgress(profile, latestBmi, nutritionRecords);
+                // (重新) 渲染歷史圖表/表格
+                await loadNutritionRecords(nutritionRecords);
+
+            } catch (e) {
+                statusEl.textContent = '❌ 載入資料時發生錯誤，請重新整理';
+                console.error(e);
+            }
+        }
+
+        // ★ (修改) 此函式現在只負責渲染，不抓資料
+        async function loadNutritionRecords(prefetchedRecords = null) {
+            try {
+                const records = prefetchedRecords ? prefetchedRecords : await apiFetch('/api/nutrition-records');
+
                 const listTbody = document.getElementById("recordListBody");
                 listTbody.innerHTML = records.map(record => `
                 <tr>
@@ -478,22 +643,29 @@
                     <td>${record.total_carbs}</td>
                     <td><button class="delete-btn" data-id="${record.id}">刪除</button></td>
                 </tr>`).join('');
+
                 const dailyData = {};
                 records.forEach(r => {
                     const date = r.date;
                     if (!dailyData[date]) { dailyData[date] = 0; }
                     dailyData[date] += r.total_calories;
                 });
+
                 const chartData = Object.entries(dailyData)
                     .map(([date, calories]) => ({ x: new Date(date.replace(/\//g, '-')), y: calories }))
                     .sort((a, b) => a.x - b.x);
+
                 drawChart(chartData);
-                statusEl.textContent = '歷史紀錄載入完成。';
+                // 確保 statusEl 在 loadAllData 之後被正確設定
+                if (statusEl.textContent.includes('載入中')) {
+                    statusEl.textContent = '歷史紀錄載入完成。';
+                }
             } catch (err) {
                 statusEl.textContent = `❌ 讀取紀錄失敗：${err.message}`;
                 drawChart([]);
             }
         }
+
         async function handleRecordDelete(event) {
             const target = event.target;
             if (target.classList.contains('delete-btn')) {
@@ -502,13 +674,15 @@
                     try {
                         await apiFetch(`/api/nutrition-records/${recordId}`, { method: 'DELETE' });
                         alert('✅ 紀錄已刪除');
-                        await loadNutritionRecords();
+                        // ★ (新) 刪除後，重新載入所有資料
+                        await loadAllData();
                     } catch (err) {
                         alert(`❌ 刪除失敗：${err.message}`);
                     }
                 }
             }
         }
+
         function drawChart(data) {
             const ctx = document.getElementById("nutritionChart").getContext("2d");
             if (chartInstance) chartInstance.destroy();
@@ -533,25 +707,23 @@
             });
         }
 
-        // --- 3. 頁面載入時執行 ---
+        // --- 3. 頁面載入時執行 (★ 已修改 ★) ---
         document.addEventListener('DOMContentLoaded', async () => {
-            // (此區塊不變，省略)
             setupSaveLogic();
+            setupUploadSpinner(); // ★ (新) 啟用上傳動畫
+
             if (!idToken) {
                 statusEl.textContent = "❌ 請先登入才能查看或儲存歷史紀錄！";
                 document.getElementById('recordListBody').innerHTML = '<tr><td colspan="8">請先登入</td></tr>';
+                document.getElementById('calInfo').textContent = '請先登入以計算熱量目標。';
                 return;
             }
-            try {
-                const profile = await apiFetch('/api/user-profile');
-                statusEl.textContent = `👤 ${profile.email || '使用者'} 的歷史紀錄：`;
-                await loadNutritionRecords();
-                document.getElementById('recordListBody').addEventListener('click', handleRecordDelete);
-            } catch (e) {
-                statusEl.textContent = '❌ 驗證失敗，請重新登入';
-                console.error(e);
-                sessionStorage.removeItem('firebaseIdToken');
-            }
+
+            // 載入所有頁面資料
+            await loadAllData();
+
+            // 綁定刪除按鈕事件
+            document.getElementById('recordListBody').addEventListener('click', handleRecordDelete);
         });
     </script>
 </body>
