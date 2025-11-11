@@ -4,15 +4,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💪 健康目標｜健康管家</title>
+  <title>💪 我的成就｜健康管家</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* 引入 zpix 字體 */
-        @font-face {
-            font-family: 'Zpix';
-            src: url('/static/zpix.ttf') format('truetype');
-        }
+    @font-face {
+      font-family: 'Zpix';
+      src: url('/static/zpix.ttf') format('truetype');
+    }
+
     :root {
       --green: #4caf50;
       --green-dark: #2e7d32;
@@ -27,12 +28,19 @@
 
     body {
       font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg);
+      /* background-color: var(--bg); */
+      /* 註解或刪除這行 */
+      background-color: transparent;
+      /* 新增：設為透明 */
       max-width: 960px;
       margin: 40px auto;
       padding: 0 20px;
       color: #333;
       line-height: 1.6;
+      position: relative;
+      /* 新增：為了 z-index */
+      z-index: 1;
+      /* 新增：確保在背景之上 */
     }
 
     h1,
@@ -298,16 +306,141 @@
       top: -20px;
       left: -20px;
     }
+
+    /* 動態背景 */
+    .aurora-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      /* 確保在內容之下 */
+      overflow: hidden;
+      background-color: #f7f9fc;
+      /* 背景底色 */
+    }
+
+    .aurora-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.6;
+    }
+
+    .shape-1 {
+      background-color: #88ff96;
+      width: 40vmin;
+      height: 40vmin;
+      top: 0;
+      left: 0;
+      animation: move-path-1 6s infinite alternate ease-in-out;
+    }
+
+    .shape-2 {
+      background-color: #aaefff;
+      width: 35vmin;
+      height: 35vmin;
+      top: 0;
+      left: 50%;
+      animation: move-path-2 5s infinite alternate ease-in-out 1s;
+    }
+
+    .shape-3 {
+      background-color: #4CAF50;
+      width: 45vmin;
+      height: 45vmin;
+      top: 0;
+      right: 0;
+      animation: move-path-3 7s infinite alternate ease-in-out;
+    }
+
+    .shape-4 {
+      background-color: #c6ffcd;
+      width: 30vmin;
+      height: 30vmin;
+      top: 50%;
+      right: 0;
+      animation: move-path-4 8s infinite alternate ease-in-out 2s;
+    }
+
+    .shape-5 {
+      background-color: #4CAF50;
+      width: 25vmin;
+      height: 25vmin;
+      bottom: 0;
+      right: 0;
+      animation: move-path-1 9s infinite alternate-reverse ease-in-out;
+    }
+
+    .shape-6 {
+      background-color: #fdeff9;
+      width: 30vmin;
+      height: 30vmin;
+      bottom: 0;
+      left: 50%;
+      animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
+    }
+
+    @keyframes move-path-1 {
+      from {
+        transform: translate(-20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(100vw - 80%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-2 {
+      from {
+        transform: translate(-50%, -20%);
+      }
+
+      to {
+        transform: translate(-50%, calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-3 {
+      from {
+        transform: translate(20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-4 {
+      from {
+        transform: translate(20%, -50%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), -50%);
+      }
+    }
   </style>
 </head>
 
 <body>
+  <!-- 動態背景 -->
+  <div class="aurora-background">
+    <div class="aurora-shape shape-1"></div>
+    <div class="aurora-shape shape-2"></div>
+    <div class="aurora-shape shape-3"></div>
+    <div class="aurora-shape shape-4"></div>
+    <div class="aurora-shape shape-5"></div>
+    <div class="aurora-shape shape-6"></div>
+  </div>
   <!-- 滑鼠設定 -->
   <div class="cursor-container">
     <img src="{{ url_for('static', filename='my-cursor.png') }}" />
   </div>
-  <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;">  返回主畫面</a>
-  <h2>💪 健康目標</h2>
+  <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
+      height="25" style="vertical-align: middle;"> 返回主畫面</a>
+  <h2>💪 我的成就</h2>
   <p style="margin-bottom:10px;color:#555">點擊快速鍵或輸入自訂數值來記錄飲水與運動，達成目標自動解鎖徽章！</p>
   <section class="card">
     <div class="row" style="justify-content: space-between;">
