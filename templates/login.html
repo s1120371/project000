@@ -7,9 +7,10 @@
   <style>
     /* 引入 zpix 字體 */
     @font-face {
-        font-family: 'Zpix';
-        src: url('/static/zpix.ttf') format('truetype');
+      font-family: 'Zpix';
+      src: url('/static/zpix.ttf') format('truetype');
     }
+
     body {
       margin: 0;
       font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -29,7 +30,8 @@
       max-width: 480px;
     }
 
-    h2 {
+    /* ★ 修正：將 h2 改為 h1 */
+    h1 {
       text-align: center;
       color: #2e7d32;
       margin-bottom: 20px;
@@ -112,21 +114,32 @@
     }
 
     /* 設定登入表單的字體 */
-    #loginForm input,#loginForm button,
-    #registerForm input,#registerForm button,
-    #tab-login,#tab-register,label, select {
-      font-family: 'Zpix', sans-serif; /* 設定為 Zpix 字體 */
+    #loginForm input,
+    #loginForm button,
+    #registerForm input,
+    #registerForm button,
+    #tab-login,
+    #tab-register,
+    label,
+    select {
+      font-family: 'Zpix', sans-serif;
+      /* 設定為 Zpix 字體 */
     }
 
     /* 設定 <select> 字體大小，內邊距，並調整選項與文字的距離 */
     select {
-      font-size: 16px; /* 字體大小 */
-      padding: 8px 12px; /* 內邊距 */
-      margin-top: 8px; /* 增加下拉選單和標籤之間的距離 */
-      margin-bottom: 18px; /* 保持底部間距 */
+      font-size: 16px;
+      /* 字體大小 */
+      padding: 8px 12px;
+      /* 內邊距 */
+      margin-top: 8px;
+      /* 增加下拉選單和標籤之間的距離 */
+      margin-bottom: 18px;
+      /* 保持底部間距 */
     }
 
-    h2 {
+    /* ★ 修正：將 h2 改為 h1 */
+    h1 {
       font-family: 'Zpix', sans-serif;
     }
 
@@ -164,26 +177,25 @@
 </head>
 
 <body>
-  <!-- 滑鼠設定 -->
   <div class="cursor-container">
     <img src="{{ url_for('static', filename='my-cursor.png') }}" />
   </div>
 
   <div class="card">
-    <h2>健康管家會員系統</h2>
+    <h1><img src="{{ url_for('static', filename='leaf.png') }}" alt="葉子圖示" width="40" height="40"
+        style="vertical-align: middle;"> 健康管家</h1>
+
     <div class="tabs">
       <button id="tab-login" class="active">登入</button>
       <button id="tab-register">註冊</button>
     </div>
 
-    <!-- Login Form -->
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="Email" required />
       <input type="password" id="loginPassword" placeholder="密碼" required />
       <button type="submit">登入</button>
     </form>
 
-    <!-- Register Form -->
     <form id="registerForm" class="hidden">
       <input type="text" name="username" placeholder="帳號" required />
       <input type="email" name="email" placeholder="Email" required />
@@ -323,7 +335,6 @@
       showStatus("", "");
     });
   </script>
-  <!-- 滑鼠js -->
   <script>
     const cursorImg = document.querySelector('.cursor-container img');
     let angle = 0;
