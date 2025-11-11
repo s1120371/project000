@@ -199,10 +199,33 @@
             display: flex;
             flex-wrap: wrap;
         }
+
+        /* 滑鼠設定 */
+        .cursor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            width: 0;
+            height: 0;
+        }
+
+        .cursor-container img {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            transform-origin: center center;
+            image-rendering: pixelated;
+        }
     </style>
 </head>
 
 <body>
+    <!-- 滑鼠設定 -->
+    <div class="cursor-container">
+        <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+    </div>
     <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
             height="25" style="vertical-align: middle;"> 返回主畫面</a>
 
@@ -230,8 +253,7 @@
         {% endif %}
 
         <div class="card" id="calorie-progress-card">
-            <h3><img src="{{ url_for('static', filename='fire.png') }}" alt="火圖示" width="30"
-                    height="30" style="vertical-align: middle; margin-bottom: 5px;margin-left: 5px;"> 今日熱量進度</h3>
+            <h3>🔥 今日熱量進度</h3>
             <div class="row" style="align-items: center; gap: 10px; display: flex;">
                 <strong>已攝取</strong>
                 <div id="calNow" style="font-weight:700; font-size: 1.2em;">0</div>
@@ -726,6 +748,25 @@
             // 綁定刪除按鈕事件
             document.getElementById('recordListBody').addEventListener('click', handleRecordDelete);
         });
+    </script>
+
+    <script>
+        //滑鼠設定
+        const cursorImg = document.querySelector('.cursor-container img');
+        let angle = 0;
+
+        if (cursorImg) {
+            cursorImg.style.transform = 'translate(-100px, -100px)';
+        }
+
+        window.addEventListener('mousemove', function (e) {
+            if (cursorImg) {
+                if (Math.abs(e.movementX) > 0 || Math.abs(e.movementY) > 0) {
+                    angle = Math.atan2(e.movementY, e.movementX) + Math.PI / 2;
+                }
+                cursorImg.style.transform = `translate(${e.clientX - cursorImg.width / 2}px, ${e.clientY - cursorImg.height / 2}px) rotate(${angle}rad)`;
+            }
+        })
     </script>
 </body>
 
