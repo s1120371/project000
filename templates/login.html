@@ -112,9 +112,18 @@
     }
 
     /* 設定登入表單的字體 */
-    #loginForm input,
-    #loginForm button,#tab-login,#tab-register {
+    #loginForm input,#loginForm button,
+    #registerForm input,#registerForm button,
+    #tab-login,#tab-register,label, select {
       font-family: 'Zpix', sans-serif; /* 設定為 Zpix 字體 */
+    }
+
+    /* 設定 <select> 字體大小，內邊距，並調整選項與文字的距離 */
+    select {
+      font-size: 16px; /* 字體大小 */
+      padding: 8px 12px; /* 內邊距 */
+      margin-top: 8px; /* 增加下拉選單和標籤之間的距離 */
+      margin-bottom: 18px; /* 保持底部間距 */
     }
 
     h2 {
