@@ -142,13 +142,44 @@
         #backButton:hover {
             background-color: #1976d2;
         }
+
+        #user-input,
+        #send-btn,
+        #backButton,
+        a {
+            /* 鼠標 */
+            cursor: url("{{ url_for('static', filename='my-cursor.png') }}") 0 0,
+            auto;
+        }
+
+        .cursor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            /* <-- 這是關鍵！設為最高層級 */
+        }
+
+        .cursor-container img {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            top: -20px;
+            left: -20px;
+        }
     </style>
 </head>
 
 <body>
+    <div class="cursor-container">
+        <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+    </div>
+
     <canvas id="three-bg"></canvas>
 
-    <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主畫面</a>
+    <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
+            height="25" style="vertical-align: middle;"> 返回主畫面</a>
 
     <div id="chat-container">
         <div id="header">
@@ -417,6 +448,26 @@
             // 4. 返回 messageDiv，以便 'AI 思考中...' 訊息可以被更新
             return messageDiv;
         }
+    </script>
+    <script>
+        //滑鼠
+        const cursorImg = document.querySelector('.cursor-container img');
+        let angle = 0;
+
+        if (cursorImg) {
+            cursorImg.style.transform = 'translate(-100px, -100px)';
+        }
+
+        window.addEventListener('mousemove', function (e) {
+            if (cursorImg) {
+                if (Math.abs(e.movementX) > 0 || Math.abs(e.movementY) > 0) {
+                    // bmi.html 的旋轉邏輯
+                    angle = Math.atan2(e.movementY, e.movementX) + Math.PI / 2;
+                }
+                // bmi.html 的置中邏輯
+                cursorImg.style.transform = `translate(${e.clientX - cursorImg.width / 2}px, ${e.clientY - cursorImg.height / 2}px) rotate(${angle}rad)`;
+            }
+        })
     </script>
 </body>
 
