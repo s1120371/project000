@@ -114,6 +114,25 @@
       top: -20px;
       left: -20px;
     }
+    #backButton {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #2196f3;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    z-index: 1000;
+    /* 提高層級確保在背景之上 */
+  }
+
+  #backButton:hover {
+    background-color: #1976d2;
+  }
   </style>
 </head>
 
@@ -122,6 +141,7 @@
   <div class="cursor-container">
     <img src="{{ url_for('static', filename='my-cursor.png') }}" />
   </div>
+  <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主畫面</a>
   <div class="container">
     <h2>👤 修改個人資料</h2>
     <form id="editForm">
