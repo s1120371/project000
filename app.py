@@ -479,17 +479,20 @@ def predict():
                     if conf < 0.5: continue
 
                     cls = int(box.cls[0])
-                    # ★ 修正 1：永遠使用英文名稱
+                    # 1. 取得英文名稱
                     eng_name_A = model_A.names[cls].lower().replace("_", " ").replace("-", " ")
                     
+                    # ★ 修正 1：優先使用本地字典翻譯中文名稱
+                    chi_name_A = item_translation_A.get(eng_name_A, eng_name_A.capitalize()) # 找不到翻譯時，退回英文
+                    
                     print(f"  模型 A: {eng_name_A} (信心度: {conf})")
-                    # ★ 修正 2：偵測清單使用英文
+                    # 2. 偵測清單使用英文
                     image_detected_foods.append({'name': eng_name_A, 'confidence': f"{conf:.2f}", 'source': 'A'})
 
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    # ★ 修正 3：畫框標籤使用英文
+                    # 3. 畫框標籤使用英文
                     label_A = f"{eng_name_A} {conf} (A)" 
-                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 畫框 (藍色)
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 藍色
 
                     # 畫白框文字
                     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -503,20 +506,23 @@ def predict():
                     if eng_name_A not in seen_foods_eng_names:
                         seen_foods_eng_names.add(eng_name_A)
                         
-                        # ★ 修正 4：使用英文名稱 (eng_name_A) 去搜尋 API
+                        # 4. 使用英文名稱 (eng_name_A) 去搜尋 API
                         index_data_A = search_food_index(eng_name_A) 
                         
                         if index_data_A:
-                            # ★ 修正 5：使用 API 傳回的中文名稱 (index_data_A['food_name'])
+                            # ★ 修正 2：卡片名稱優先使用我們本地的中文 (chi_name_A)
+                            # 只有在本地字典查不到時，才使用 API 回傳的 (可能不準的) 中文
+                            display_name_A = chi_name_A if chi_name_A != eng_name_A.capitalize() else index_data_A['food_name']
+                            
                             image_food_infos.append({
-                                'food_name': index_data_A['food_name'], 'confidence': f"{conf:.2f}",
+                                'food_name': display_name_A, 'confidence': f"{conf:.2f}",
                                 'food_description': index_data_A['food_description'],
                                 'index': index_data_A['index'], 'source': 'A'
                             })
                         else:
-                            # Fallback：如果 API 查不到，卡片也使用英文
+                            # Fallback：如果 API 查不到，卡片使用本地中文 (或英文)
                             image_food_infos.append({
-                                'food_name': eng_name_A, 'confidence': f"{conf:.2f}",
+                                'food_name': chi_name_A, 'confidence': f"{conf:.2f}",
                                 'food_description': "查無此食物的詳細營養資訊。",
                                 'index': None, 'source': 'A'
                             })
@@ -531,45 +537,50 @@ def predict():
                     if conf < 0.2: continue
 
                     cls = int(box.cls[0])
-                    # ★ 修正 1：永遠使用英文名稱
+                    # 1. 取得英文名稱
                     eng_name_B = model_B.names[cls].lower().replace("_", " ").replace("-", " ")
                     
+                    # ★ 修正 1：優先使用本地字典翻譯中文名稱
+                    chi_name_B = item_translation_B.get(eng_name_B, eng_name_B.capitalize()) # 找不到翻譯時，退回英文
+                    
                     print(f"  模型 B: {eng_name_B} (信心度: {conf})")
-                    # ★ 修正 2：偵測清單使用英文
+                    # 2. 偵測清單使用英文
                     image_detected_foods.append({'name': eng_name_B, 'confidence': f"{conf:.2f}", 'source': 'B'})
 
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    # ★ 修正 3：畫框標籤使用英文
+                    # 3. 畫框標籤使用英文
                     label_B = f"{eng_name_B} {conf} (B)" 
                     text_y = y1 - 30 if y1 > 30 else y1 + 15
-                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 畫框 (藍色)
+                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (255, 0, 0), 2) # 藍色不要修正
 
-                    # 畫白框文字 
+                    # 畫白框文字
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     font_scale = 0.6
                     pos = (x1, text_y)
                     border_color = (255, 255, 255) 
-                    main_color = (255, 0, 0) # 藍色
+                    main_color = (255, 0, 0) # 藍色不要修正
                     cv2.putText(cv_image, label_B, pos, font, font_scale, border_color, 5, cv2.LINE_AA)
                     cv2.putText(cv_image, label_B, pos, font, font_scale, main_color, 2, cv2.LINE_AA)
 
                     if eng_name_B not in seen_foods_eng_names:
                         seen_foods_eng_names.add(eng_name_B)
                         
-                        # ★ 修正 4：使用英文名稱 (eng_name_B) 去搜尋 API
+                        # 4. 使用英文名稱 (eng_name_B) 去搜尋 API
                         index_data_B = search_food_index(eng_name_B)
                         
                         if index_data_B:
-                            # ★ 修正 5：使用 API 傳回的中文名稱 (index_data_B['food_name'])
+                            # ★ 修正 2：卡片名稱優先使用我們本地的中文 (chi_name_B)
+                            display_name_B = chi_name_B if chi_name_B != eng_name_B.capitalize() else index_data_B['food_name']
+
                             image_food_infos.append({
-                                'food_name': index_data_B['food_name'], 'confidence': f"{conf:.2f}",
+                                'food_name': display_name_B, 'confidence': f"{conf:.2f}",
                                 'food_description': index_data_B['food_description'],
                                 'index': index_data_B['index'], 'source': 'B'
                             })
                         else:
-                            # Fallback：如果 API 查不到，卡片也使用英文
+                            # Fallback：如果 API 查不到，卡片使用本地中文 (或英文)
                             image_food_infos.append({
-                                'food_name': eng_name_B, 'confidence': f"{conf:.2f}",
+                                'food_name': chi_name_B, 'confidence': f"{conf:.2f}",
                                 'food_description': "查無此食物的詳細營養資訊。",
                                 'index': None, 'source': 'B'
                             })
