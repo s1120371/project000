@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>BMI 計算與歷史紀錄</title>
+  <title>BMI 計算</title>
+  <link rel="icon" href="{{ url_for('static', filename='bmi.png') }}" type="image/png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -293,7 +294,7 @@
 
   <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主畫面</a>
 
-  <h2>BMI 計算器</h2>
+  <h2><img src="{{ url_for('static', filename='bmi.png') }}" alt="三角板圖示" width="20"height="20"style="vertical-align: middle;"> BMI 計算器</h2>
   <p id="status">登入狀態載入中...</p>
   <label>身高 (cm)<input type="number" id="height" min="50" max="300" required /></label>
   <label>體重 (kg)<input type="number" id="weight" min="10" max="300" required /></label>
