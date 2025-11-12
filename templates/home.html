@@ -62,7 +62,7 @@
   </div>
 
   <section class="user-data container">
-    <h2>👤 使用者個人資料</h2>
+    <h2><img src="{{ url_for('static', filename='person.png') }}" alt="人像圖示" width="20"height="20"style="vertical-align: middle;"> 使用者個人資料</h2>
     <div id="userInfo" class="info-box" style="display:none;">
       <p><strong>帳號：</strong><span id="username"></span></p>
       <p><strong>姓名：</strong><span id="fullname"></span></p>
@@ -76,7 +76,7 @@
   <br>
   <section class="news-preview">
     <div class="container">
-      <h3>📢 相關新聞</h3>
+      <h3><img src="{{ url_for('static', filename='news.png') }}" alt="三角板圖示" width="40"height="40"style="vertical-align: middle;"> 相關新聞</h3>
       <div class="card-container">
         <div class="card">
           <div class="imgBx"
@@ -173,8 +173,9 @@
         loginLinks.style.display = "none";
 
         const username = data.username || data.email;
-        welcomeTitle.textContent = `👋 歡迎回來，${username}`;
+        welcomeTitle.innerHTML = `<img src="{{ url_for('static', filename='hello.png') }}" alt="揮手圖示" width="30" height="30" style="vertical-align: middle;"> 歡迎回來，${username}`;
         userIdentity.textContent = username;
+
 
         userInfoBox.style.display = "block";
         document.getElementById("username").textContent = data.username || "未填寫";

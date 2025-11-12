@@ -345,7 +345,7 @@
       }
       try {
         const profile = await apiFetch('/api/user-profile');
-        statusEl.textContent = `👤 已登入：${profile.email || '使用者'}`;
+        statusEl.innerHTML = `<img src="{{ url_for('static', filename='person.png') }}" alt="人像圖示" width="20" height="20" style="vertical-align: middle;"> 已登入：${profile.email || '使用者'}`;
         await loadBMIRecords();
       } catch (e) {
         statusEl.textContent = '❌ 驗證失敗，請重新登入';

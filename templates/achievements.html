@@ -183,9 +183,15 @@
     }
 
     .key[data-type="water"]::before {
-      content: "💧";
-      margin-right: 6px;
-    }
+  content: "";
+  display: inline-block;
+  width: 20px; /* 根據你的圖片大小調整 */
+  height: 20px; /* 根據你的圖片大小調整 */
+  background-image: url('{{ url_for("static", filename="water.png") }}');
+  background-size: cover;
+  margin-right: 6px;
+  vertical-align: middle;
+}
 
     .key[data-type="ex"]::before {
       content: "🏃";
@@ -457,11 +463,11 @@
     </div>
     <div class="spacer-24"></div>
     <section class="card">
-      <h3 style="margin:0 0 10px;">🗓️ 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='date.png') }}" alt="日曆圖示" width="23"height="23"style="vertical-align: middle;"> 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
     </section>
     <div class="grid grid-2">
       <div class="card" style="margin:0;">
-        <h3 style="margin-top:0;">🥤 今日飲水</h3>
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"height="23"style="vertical-align: middle;"> 今日飲水</h3>
         <div class="row"><strong>已喝</strong>
           <div id="waterNow" style="font-weight:700;">0</div>
           <div>ml</div>
@@ -484,7 +490,7 @@
         </div>
       </div>
       <div class="card" style="margin:0;">
-        <h3 style="margin-top:0;">🏃‍♀️ 今日運動</h3>
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"height="25"style="vertical-align: middle;"> 今日運動</h3>
         <div class="row"><strong>已運動</strong>
           <div id="exNow" style="font-weight:700;">0</div>
           <div>分鐘</div>
@@ -509,16 +515,16 @@
     </div>
   </section>
   <section class="card">
-    <h3 style="margin:0 0 10px;">🏅 今日徽章</h3>
+    <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='badge.png') }}" alt="徽章圖示" width="25"height="25"style="vertical-align: middle;"> 今日徽章</h3>
     <div id="badges" class="row" style="gap:10px;"></div>
   </section>
   <div class="spacer-24"></div>
   <section class="grid grid-2">
     <div class="card">
-      <h3 style="margin:0 0 10px;">🥤 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"height="23"style="vertical-align: middle;"> 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
     </div>
     <div class="card">
-      <h3 style="margin:0 0 10px;">🏃‍♀️ 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"height="25"style="vertical-align: middle;"> 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
     </div>
   </section>
   <div class="spacer-24"></div>
@@ -762,10 +768,10 @@
 
     // --- Badges Logic ---
     const BADGES_CONFIG = {
-      'water_2l_day': { name: '水分達標', icon: '💧' },
+      'water_2l_day': { name: '水分達標', icon: '<img src="{{ url_for("static", filename="water.png") }}" alt="水滴圖示" width="20" height="20" style="vertical-align: middle;">' },
       'exercise_30m_day': { name: '動一動', icon: '🏃' },
       'double_goal_day': { name: '雙達標', icon: '🥇' },
-      'streak_3': { name: '連續3天', icon: '🔥' }
+      'streak_3': { name: '連續3天', icon: '<img src="{{ url_for("static", filename="fire.png") }}" alt="火圖示" width="20" height="20" style="vertical-align: middle;">' }
     };
 
     async function loadBadges() {

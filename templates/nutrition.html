@@ -503,11 +503,11 @@
 
         <hr class="my-5">
         <div class="text-center">
-            <h2 class="display-6 fw-bold">📈 營養攝取歷史</h2>
+            <h2 class="display-6 fw-bold"><img src="{{ url_for('static', filename='chart.png') }}" alt="趨勢圖圖示" width="40"height="40"style="vertical-align: middle;"> 營養攝取歷史</h2>
         </div>
         <p id="history-status" class="text-center">登入狀態載入中...</p>
         <div class="card">
-            <h3>📊 每日熱量攝取趨勢</h3>
+            <h3><img src="{{ url_for('static', filename='chart2.png') }}" alt="圖表圖示" width="30"height="30"style="vertical-align: middle;"> 每日熱量攝取趨勢</h3>
             <canvas id="nutritionChart" width="800" height="300"></canvas>
         </div>
         <div class="card">

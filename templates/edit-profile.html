@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>編輯個資與密碼</title>
+  <title>編輯資料</title>
+  <link rel="icon" href="{{ url_for('static', filename='edit.png') }}" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
   <style>
     /* 引入 zpix 字體 */
@@ -143,7 +144,7 @@
   </div>
   <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主畫面</a>
   <div class="container">
-    <h2>👤 修改個人資料</h2>
+    <h2><img src="{{ url_for('static', filename='person.png') }}" alt="人像圖示" width="25"height="25"style="vertical-align: middle;"> 修改個人資料</h2>
     <form id="editForm">
       <label>帳號</label>
       <input type="text" name="username" required />
@@ -190,7 +191,6 @@
 
     <p id="status"></p>
     <br>
-    <button id="homeBtn" style="background-color: #2196f3;"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"height="25"style="vertical-align: middle;"> 返回主頁</button>
     <button id="logoutBtn" style="background-color: #757575;">登出</button>
   </div>
 
