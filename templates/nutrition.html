@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>營養分析</title>
+    <title>食物營養辨識與紀錄</title>
     <link rel="icon" href="{{ url_for('static', filename='nutr.png') }}" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,14 +18,9 @@
 
         body {
             font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            /* background-color: #f8f9fa; */
-            /* 註解或刪除這行 */
             background-color: transparent;
-            /* 新增：設為透明 */
             position: relative;
-            /* 新增：為了 z-index */
             z-index: 1;
-            /* 新增：確保在背景之上 */
         }
 
         #backButton {
@@ -188,7 +183,7 @@
             white-space: pre-wrap;
         }
 
-        /* ★ (新) 進度條 CSS */
+        /* 進度條 CSS */
         .progress {
             height: 14px;
             background: #edf2f7;
@@ -235,10 +230,8 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            /* 確保在內容之下 */
             overflow: hidden;
             background-color: #f7f9fc;
-            /* 背景底色 */
         }
 
         .aurora-shape {
@@ -345,7 +338,6 @@
 </head>
 
 <body>
-    <!-- 動態背景 -->
     <div class="aurora-background">
         <div class="aurora-shape shape-1"></div>
         <div class="aurora-shape shape-2"></div>
@@ -354,7 +346,6 @@
         <div class="aurora-shape shape-5"></div>
         <div class="aurora-shape shape-6"></div>
     </div>
-    <!-- 滑鼠設定 -->
     <div class="cursor-container">
         <img src="{{ url_for('static', filename='my-cursor.png') }}" />
     </div>
@@ -368,15 +359,41 @@
             <p class="lead text-muted">上傳一張或多張圖片進行辨識，並可儲存營養紀錄。</p>
         </div>
 
-        <div class="card shadow-sm mb-4 upload-card">
-            <form action="/predict" method="POST" enctype="multipart/form-data" id="predict-form">
-                <div class="input-group">
-                    <input type="file" class="form-control" name="image" required accept="image/*" multiple
-                        id="file-input">
-                    <button type="submit" class="btn btn-primary fw-bold" id="predict-btn">上傳並辨識</button>
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 upload-card">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">📷 上傳圖片辨識</h5>
+                        <p class="text-muted small">請選擇或拍攝食物照片，AI 將自動分析營養成分。</p>
+
+                        <form action="/predict" method="POST" enctype="multipart/form-data" id="predict-form">
+                            <div class="input-group">
+                                <input type="file" class="form-control" name="image" required accept="image/*" multiple
+                                    id="file-input">
+                                <button type="submit" class="btn btn-outline-success" id="predict-btn">上傳</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">✍️ 手動新增食物</h5>
+                        <p class="text-muted small">如果 AI 沒有辨識到，您可以在這裡手動輸入名稱查詢。</p>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="manual-food-name" placeholder="例如: 蘋果">
+                            <button class="btn btn-outline-success" id="manual-add-btn">新增</button>
+                        </div>
+                        <div id="manual-add-status" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
 
         {% if error %}
         <div class="alert alert-danger" role="alert">
@@ -403,9 +420,8 @@
                 ... 正在載入您的個資與BMI以計算TDEE...
             </small>
         </div>
-        {% if all_results and all_results|length > 0 %}
 
-        <div class="save-section" style="top: 10px; z-index: 900;">
+        <div class="save-section" id="main-save-section" style="top: 10px; z-index: 900; display: none;">
             <h4>🍴 儲存今日飲食</h4>
             <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕。</p>
             <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
@@ -422,6 +438,10 @@
 
         <hr class="my-4">
 
+        <div id="manual-cards-container">
+        </div>
+
+        {% if all_results and all_results|length > 0 %}
         {% for res in all_results %}
         <div class="row g-4 mt-4 border-bottom pb-4 mb-4">
             <div class="col-lg-6">
@@ -500,14 +520,15 @@
         </div>
         {% endfor %}
         {% endif %}
-
         <hr class="my-5">
         <div class="text-center">
-            <h2 class="display-6 fw-bold"><img src="{{ url_for('static', filename='chart.png') }}" alt="趨勢圖圖示" width="40"height="40"style="vertical-align: middle;"> 營養攝取歷史</h2>
+            <h2 class="display-6 fw-bold"><img src="{{ url_for('static', filename='chart.png') }}" alt="趨勢圖圖示"
+                    width="40" height="40" style="vertical-align: middle;"> 營養攝取歷史</h2>
         </div>
         <p id="history-status" class="text-center">登入狀態載入中...</p>
         <div class="card">
-            <h3><img src="{{ url_for('static', filename='chart2.png') }}" alt="圖表圖示" width="30"height="30"style="vertical-align: middle;"> 每日熱量攝取趨勢</h3>
+            <h3><img src="{{ url_for('static', filename='chart2.png') }}" alt="圖表圖示" width="30" height="30"
+                    style="vertical-align: middle;"> 每日熱量攝取趨勢</h3>
             <canvas id="nutritionChart" width="800" height="300"></canvas>
         </div>
         <div class="card">
@@ -620,6 +641,102 @@
             calInfoEl.textContent = `(TDEE目標是根據您的個資與最新BMI計算) ${latestBmi.height}cm / ${latestBmi.weight}kg`;
         }
 
+
+        // --- ★ (新) 手動新增卡片 相關函式 ---
+        function createManualCard(data) {
+            const container = document.getElementById('manual-cards-container');
+            if (!container) return;
+
+            // 產生唯一的 ID
+            const uniqueId = `manual-${new Date().getTime()}`;
+
+            // 建立營養項目列表 (如果 index 存在)
+            let indexHtml = '';
+            if (data.index) {
+                indexHtml = '<ul class="list-group list-group-flush mt-3">';
+                for (const [key, value] of Object.entries(data.index)) {
+                    indexHtml += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        ${key}
+                        <span class="badge bg-primary rounded-pill">${value}</span>
+                    </li>`;
+                }
+                indexHtml += '</ul>';
+            }
+
+            // 組合卡片 HTML
+            const cardHTML = `
+            <div class="row g-4 mt-2 border-bottom pb-4 mb-4 manual-card">
+                <div class="col-lg-6">
+                    <h2 class="h4 mb-3" style="color: #0d6efd;">🥗 (手動新增) 詳細營養資訊</h2>
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">${data.food_name}</h5>
+                                <div class="form-check">
+                                    <input class="form-check-input save-food-item" type="checkbox"
+                                        id="${uniqueId}"
+                                        data-name="${data.food_name}"
+                                        data-calories="${data.index['熱量 (kcal)'] || 0}"
+                                        data-fat="${data.index['脂肪 (g)'] || 0}"
+                                        data-carbs="${data.index['碳水化合物 (g)'] || 0}"
+                                        data-protein="${data.index['蛋白質 (g)'] || 0}" checked>
+                                    <label class="form-check-label" for="${uniqueId}">
+                                        儲存
+                                    </label>
+                                </div>
+                            </div>
+                            <h6 class="card-subtitle mb-2 text-muted">來源: 手動查詢 (FatSecret)</h6>
+                            <p class="card-text"><small>${data.food_description || ''}</small></p>
+                            ${indexHtml}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="alert alert-info" role="alert">
+                        這是手動新增的項目，沒有辨識圖片。
+                    </div>
+                </div>
+            </div>
+            `;
+
+            container.insertAdjacentHTML('afterbegin', cardHTML); // 插入到容器最頂部
+            // 一旦手動新增了卡片，就顯示儲存按鈕
+            document.getElementById('main-save-section').style.display = 'block';
+        }
+
+        function setupManualAdd() {
+            const btn = document.getElementById('manual-add-btn');
+            const input = document.getElementById('manual-food-name');
+            const status = document.getElementById('manual-add-status');
+
+            if (!btn || !input || !status) return;
+
+            btn.addEventListener('click', async () => {
+                const foodName = input.value.trim();
+                if (!foodName) {
+                    status.textContent = "❌ 請輸入食物名稱。";
+                    status.className = 'status-error';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = "查詢中...";
+                status.textContent = "";
+
+                try {
+                    const result = await apiFetch(`/api/search-food?name=${encodeURIComponent(foodName)}`);
+                    createManualCard(result); // 呼叫函式建立卡片
+                    input.value = ""; // 清空輸入框
+                } catch (err) {
+                    status.textContent = `❌ ${err.message}`;
+                    status.className = 'status-error';
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = "查詢並新增";
+                }
+            });
+        }
 
         // --- API 輔助函式 ---
         async function apiFetch(endpoint, options = {}) {
@@ -867,7 +984,11 @@
         document.addEventListener('DOMContentLoaded', async () => {
             setupSaveLogic();
             setupUploadSpinner(); // ★ (新) 啟用上傳動畫
-
+            setupManualAdd(); // <-- ★ 在此加入新函式的呼叫
+            // 如果有 AI 辨識結果，就顯示儲存按鈕
+            if (document.querySelector('.result-img')) {
+                document.getElementById('main-save-section').style.display = 'block';
+            }
             if (!idToken) {
                 statusEl.textContent = "❌ 請先登入才能查看或儲存歷史紀錄！";
                 document.getElementById('recordListBody').innerHTML = '<tr><td colspan="8">請先登入</td></tr>';
