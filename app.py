@@ -219,7 +219,7 @@ item_translation_B = {
 def verify_token(request):
     id_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
     if not id_token:
-        return None, (jsonify({'error': '缺少驗證資訊'}), 401)
+        return None, (jsonify({'error': '請登入再做查詢'}), 401)
     try:
         decoded_token = auth.verify_id_token(id_token)
         return decoded_token, None
@@ -373,8 +373,22 @@ def generate_llama_advice(user_query, user_profile, history_messages=None):
 # --- 營養查詢輔助函式 ---
 def translate_text(text, target='zh-TW'):
     if not text: return ""
-    try: return GoogleTranslator(source='auto', target=target).translate(text)
-    except Exception: return text
+    
+    # 判斷來源語言
+    # 如果目標是 'en'，那來源很可能是 'zh-TW'
+    # 如果目標是 'zh-TW'，那來源很可能是 'en' (或 'auto')
+    source_lang = 'auto'
+    if target == 'en':
+        source_lang = 'zh-TW'
+    elif target == 'zh-TW':
+        source_lang = 'en'
+
+    try: 
+        # ★ 修正：明確指定 source 和 target
+        return GoogleTranslator(source=source_lang, target=target).translate(text)
+    except Exception as e:
+        print(f"!!! 翻譯失敗 (from {source_lang} to {target}): {e}")
+        return text # 翻譯失敗時，回傳原文
 
 def parse_index(description):
     index = {}
@@ -886,6 +900,36 @@ def handle_badges():
 
         return jsonify({'message': '徽章評估完成'}), 200
 
+
+@app.route('/api/search-food', methods=['GET'])
+def api_search_food():
+    decoded_token, error = verify_token(request)
+    if error: return error
+    
+    food_name_ch = request.args.get('name') # e.g., "薯條"
+    if not food_name_ch:
+        return jsonify({'error': '缺少食物名稱 (name) 參數'}), 400
+        
+    try:
+        # ★★★ 關鍵修正：在搜尋前，必須先翻譯成英文 ★★★
+        food_name_en = translate_text(food_name_ch, target='en')
+        print(f"手動搜尋：'{food_name_ch}' -> 翻譯為 '{food_name_en}'")
+
+        # 1. 使用英文名稱 (food_name_en) 去搜尋 API
+        search_result = search_food_index(food_name_en)
+        
+        if not search_result or not search_result.get('index'):
+            return jsonify({'error': f'在 FatSecret 資料庫中找不到 "{food_name_ch}" ({food_name_en}) 的營養資訊'}), 404
+            
+        # 2. search_food_index 函式會自動將結果翻譯回中文
+        #    所以我們不需要修改 search_result
+        
+        # 成功，回傳 JSON 結果
+        return jsonify(search_result), 200
+        
+    except Exception as e:
+        print(f"Food search API error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # --- ★ (新) AI 飲食評價 API ---
 @app.route('/api/evaluate-diet', methods=['POST'])
