@@ -40,7 +40,7 @@
         </div>
 
 
-        <div class="card mb-4" id="calorie-progress-card">
+        <div class="card mb-4 card-hover-green" id="calorie-progress-card">
             <h3><img src="{{ url_for('static', filename='fire.png') }}" alt="火圖示" width="30" height="30"
                     style="vertical-align: middle; margin-bottom: 5px;margin-left: 5px;"> 今日熱量進度</h3>
 
@@ -66,7 +66,7 @@
         <div class="row g-3 mb-4" id="upload-section">
 
             <div class="col-md-6">
-                <div class="card shadow-sm h-100 upload-card">
+                <div class="card shadow-sm h-100 upload-card card-hover-green">
                     <div class="card-body">
                         <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">📷 上傳圖片辨識</h5>
                         <p class="text-muted small">請選擇或拍攝食物照片，AI 將自動分析營養成分</p>
@@ -83,7 +83,7 @@
             </div>
 
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
+                <div class="card shadow-sm h-100 ard shadow-sm h-100 card-hover-green">
                     <div class="card-body">
                         <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">✍️ 手動新增食物</h5>
                         <p class="text-muted small">如果 AI 沒有辨識到，您可以在這裡手動輸入名稱查詢</p>
@@ -105,14 +105,15 @@
         </div>
         {% endif %}
 
-        <div class="save-section" id="main-save-section" style="top: 10px; z-index: 900; display: none;">
+        <div class="save-section" id="main-save-section card-hover-green"
+            style="top: 10px; z-index: 900; display: none;">
             <h4>🍴 儲存今日飲食</h4>
             <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕</p>
             <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
             <div id="saveStatus"></div>
         </div>
 
-        <div class="card" id="aiEvaluationBox" style="display:none; margin-top: 20px;">
+        <div class="card card-hover-green" id="aiEvaluationBox" style="display:none; margin-top: 20px;">
             <div class="card-body">
                 <h5 class="card-title">🤖 AI 飲食分析</h5>
                 <pre id="aiEvaluationContent"
@@ -138,7 +139,7 @@
                     </div>
                 </div>
                 {% if res.detected_foods %}
-                <div class="card shadow-sm">
+                <div class="card shadow-sm card-hover-green">
                     <div class="card-header fw-bold">🍽️ 偵測到的食物</div>
                     <div class="card-body">
                         <ul class="list-group list-group-flush">
@@ -210,12 +211,12 @@
                     width="40" height="40" style="vertical-align: middle;"> 營養攝取歷史</h2>
         </div>
         <p id="history-status" class="text-center">登入狀態載入中...</p>
-        <div class="card" id="history-section">
+        <div class="card card-hover-green" id="history-section">
             <h3><img src="{{ url_for('static', filename='chart2.png') }}" alt="圖表圖示" width="30" height="30"
                     style="vertical-align: middle;"> 每日熱量攝取趨勢</h3>
             <canvas id="nutritionChart" width="800" height="300"></canvas>
         </div>
-        <div class="card" id="record-section">
+        <div class="card card-hover-green" id="record-section">
             <h3>🧾 飲食紀錄</h3>
             <div style="overflow-x: auto;">
                 <table>
