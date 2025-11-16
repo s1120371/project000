@@ -472,3 +472,29 @@ td ul li {
     /* (您範例中是白色光暈) */
     box-shadow: 0 8px 30px 0 rgba(76, 175, 80, 0.25);
 }
+
+/* --- ★ (新) 標題美化：漸層文字特效 ★ --- */
+
+.page-title h1 {
+    /* 1. 定義漸層背景 (使用您的主題色：綠色到藍色) */
+    background: linear-gradient(90deg, #2e7d32, #659a7b);
+
+    /* 2. 將背景裁切為文字的形狀 */
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    /* 3. 讓文字本身變透明，以顯示底下的漸層 */
+    color: transparent;
+
+    /* 4. 確保漸層正確顯示 (有時需要) */
+    display: inline-block;
+    padding-bottom: 5px;
+    /* 增加一點點底部空間 */
+}
+
+/* (可選) 讓底下的 <p> 說明文字也變粗一點 */
+.page-title .lead {
+    font-weight: bold;
+    color: #555 !important;
+    /* 覆蓋 text-muted 的灰色 */
+}
