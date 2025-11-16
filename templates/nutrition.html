@@ -6,335 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>食物營養辨識與紀錄</title>
     <link rel="icon" href="{{ url_for('static', filename='nutr.png') }}" type="image/png">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
-    <style>
-        @font-face {
-            font-family: 'Zpix';
-            src: url('/static/zpix.ttf') format('truetype');
-        }
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-        body {
-            font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: transparent;
-            position: relative;
-            z-index: 1;
-        }
-
-        #backButton {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #2196f3;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease;
-            z-index: 1000;
-        }
-
-        .container {
-            max-width: 960px;
-        }
-
-        .card-title {
-            font-weight: bold;
-            color: #0d6efd;
-        }
-
-        .upload-card {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            padding: 2rem;
-        }
-
-        .result-img {
-            border: 3px solid #dee2e6;
-            max-width: 100%;
-            height: auto;
-            margin-bottom: 1rem;
-        }
-
-        .badge.bg-secondary {
-            background-color: #6c757d !important;
-        }
-
-        .save-section {
-            background: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            text-align: center;
-        }
-
-        .save-section .btn-success {
-            font-family: 'Zpix', sans-serif;
-            padding: 12px 24px;
-            font-size: 1.1rem;
-        }
-
-        #saveStatus {
-            margin-top: 15px;
-            font-weight: bold;
-        }
-
-        .status-success {
-            color: #198754;
-        }
-
-        .status-error {
-            color: #dc3545;
-        }
-
-        .form-check-input:checked {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-        }
-
-        .form-check-label {
-            cursor: pointer;
-        }
-
-        .card {
-            background: #fff;
-            border: 1px solid #e6e9ef;
-            border-radius: 14px;
-            box-shadow: 0 6px 20px rgba(30, 60, 90, .06);
-            padding: 20px;
-            margin-bottom: 28px;
-        }
-
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #4caf50;
-            color: white;
-            font-weight: bold;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        td ul {
-            list-style-type: none;
-            padding-left: 0;
-            margin-bottom: 0;
-            text-align: left;
-        }
-
-        td ul li {
-            background: #e8f5e9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            font-size: 0.9em;
-        }
-
-        .delete-btn {
-            font-family: 'Zpix', sans-serif;
-            background-color: #e53935;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        #aiEvaluationBox {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            text-align: left;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 8px;
-        }
-
-        #aiEvaluationBox h5 {
-            color: #0d6efd;
-        }
-
-        #aiEvaluationContent {
-            line-height: 1.7;
-            white-space: pre-wrap;
-        }
-
-        /* 進度條 CSS */
-        .progress {
-            height: 14px;
-            background: #edf2f7;
-            border-radius: 999px;
-            overflow: hidden;
-        }
-
-        .bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #e53935 0%, #ff6b6b 100%);
-            transition: width .3s ease;
-        }
-
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        /* 滑鼠設定 */
-        .cursor-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 9999;
-            width: 0;
-            height: 0;
-        }
-
-        .cursor-container img {
-            width: 40px;
-            height: 40px;
-            position: absolute;
-            transform-origin: center center;
-            image-rendering: pixelated;
-        }
-
-        /* 動態背景 */
-        .aurora-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-            background-color: #f7f9fc;
-        }
-
-        .aurora-shape {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.6;
-        }
-
-        .shape-1 {
-            background-color: #88ff96;
-            width: 40vmin;
-            height: 40vmin;
-            top: 0;
-            left: 0;
-            animation: move-path-1 6s infinite alternate ease-in-out;
-        }
-
-        .shape-2 {
-            background-color: #aaefff;
-            width: 35vmin;
-            height: 35vmin;
-            top: 0;
-            left: 50%;
-            animation: move-path-2 5s infinite alternate ease-in-out 1s;
-        }
-
-        .shape-3 {
-            background-color: #4CAF50;
-            width: 45vmin;
-            height: 45vmin;
-            top: 0;
-            right: 0;
-            animation: move-path-3 7s infinite alternate ease-in-out;
-        }
-
-        .shape-4 {
-            background-color: #c6ffcd;
-            width: 30vmin;
-            height: 30vmin;
-            top: 50%;
-            right: 0;
-            animation: move-path-4 8s infinite alternate ease-in-out 2s;
-        }
-
-        .shape-5 {
-            background-color: #4CAF50;
-            width: 25vmin;
-            height: 25vmin;
-            bottom: 0;
-            right: 0;
-            animation: move-path-1 9s infinite alternate-reverse ease-in-out;
-        }
-
-        .shape-6 {
-            background-color: #fdeff9;
-            width: 30vmin;
-            height: 30vmin;
-            bottom: 0;
-            left: 50%;
-            animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
-        }
-
-        @keyframes move-path-1 {
-            from {
-                transform: translate(-20%, -20%);
-            }
-
-            to {
-                transform: translate(calc(100vw - 80%), calc(100vh - 80%));
-            }
-        }
-
-        @keyframes move-path-2 {
-            from {
-                transform: translate(-50%, -20%);
-            }
-
-            to {
-                transform: translate(-50%, calc(100vh - 80%));
-            }
-        }
-
-        @keyframes move-path-3 {
-            from {
-                transform: translate(20%, -20%);
-            }
-
-            to {
-                transform: translate(calc(-100vw + 120%), calc(100vh - 80%));
-            }
-        }
-
-        @keyframes move-path-4 {
-            from {
-                transform: translate(20%, -50%);
-            }
-
-            to {
-                transform: translate(calc(-100vw + 120%), -50%);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='nutrition.css') }}">
 </head>
 
 <body>
@@ -356,16 +36,40 @@
         <div class="text-center mb-5">
             <h1 class="display-5 fw-bold"><img src="{{ url_for('static', filename='apple.png') }}" alt="蘋果圖示" width="50"
                     height="50" style="vertical-align: middle;"> 食物辨識與營養資訊</h1>
-            <p class="lead text-muted">上傳一張或多張圖片進行辨識，並可儲存營養紀錄。</p>
+            <p class="lead text-muted">上傳一張或多張圖片進行辨識，可儲存營養紀錄</p>
         </div>
 
-        <div class="row g-3 mb-4">
+
+        <div class="card mb-4" id="calorie-progress-card">
+            <h3><img src="{{ url_for('static', filename='fire.png') }}" alt="火圖示" width="30" height="30"
+                    style="vertical-align: middle; margin-bottom: 5px;margin-left: 5px;"> 今日熱量進度</h3>
+
+            <div class="calorie-display">
+                <span id="calNow" class="calorie-hero-number">0</span>
+                <span class="calorie-hero-unit"> / <span id="calGoalText">2000</span> kcal</span>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress" style="height: 24px;">
+                    <div id="calBar" class="bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
+                        <span id="calPct">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <small id="calInfo" style="margin-top: 10px; display: block; color: #555; text-align: center;">
+                ... 正在載入您的個資與BMI以計算TDEE...
+            </small>
+        </div>
+
+        <div class="row g-3 mb-4" id="upload-section">
 
             <div class="col-md-6">
                 <div class="card shadow-sm h-100 upload-card">
                     <div class="card-body">
                         <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">📷 上傳圖片辨識</h5>
-                        <p class="text-muted small">請選擇或拍攝食物照片，AI 將自動分析營養成分。</p>
+                        <p class="text-muted small">請選擇或拍攝食物照片，AI 將自動分析營養成分</p>
 
                         <form action="/predict" method="POST" enctype="multipart/form-data" id="predict-form">
                             <div class="input-group">
@@ -382,7 +86,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body">
                         <h5 class="card-title" style="color: #2e7d32; font-weight: bold;">✍️ 手動新增食物</h5>
-                        <p class="text-muted small">如果 AI 沒有辨識到，您可以在這裡手動輸入名稱查詢。</p>
+                        <p class="text-muted small">如果 AI 沒有辨識到，您可以在這裡手動輸入名稱查詢</p>
                         <div class="input-group">
                             <input type="text" class="form-control" id="manual-food-name" placeholder="例如: 蘋果">
                             <button class="btn btn-outline-success" id="manual-add-btn">新增</button>
@@ -401,29 +105,9 @@
         </div>
         {% endif %}
 
-        <div class="card" id="calorie-progress-card">
-            <h3><img src="{{ url_for('static', filename='fire.png') }}" alt="火圖示" width="30" height="30"
-                    style="vertical-align: middle; margin-bottom: 5px;margin-left: 5px;"> 今日熱量進度</h3>
-            <div class="row" style="align-items: center; gap: 10px; display: flex;">
-                <strong>已攝取</strong>
-                <div id="calNow" style="font-weight:700; font-size: 1.2em;">0</div>
-                <div>kcal</div>
-            </div>
-            <div class="progress" style="margin:10px 0 6px;">
-                <div id="calBar" class="bar"></div>
-            </div>
-            <div class="row" style="justify-content: space-between; display: flex;">
-                <small>目標：<span id="calGoalText">2000</span> kcal</small>
-                <small id="calPct" style="font-weight: 700;">0%</small>
-            </div>
-            <small id="calInfo" style="margin-top: 10px; display: block; color: #555;">
-                ... 正在載入您的個資與BMI以計算TDEE...
-            </small>
-        </div>
-
         <div class="save-section" id="main-save-section" style="top: 10px; z-index: 900; display: none;">
             <h4>🍴 儲存今日飲食</h4>
-            <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕。</p>
+            <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕</p>
             <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
             <div id="saveStatus"></div>
         </div>
@@ -526,12 +210,12 @@
                     width="40" height="40" style="vertical-align: middle;"> 營養攝取歷史</h2>
         </div>
         <p id="history-status" class="text-center">登入狀態載入中...</p>
-        <div class="card">
+        <div class="card" id="history-section">
             <h3><img src="{{ url_for('static', filename='chart2.png') }}" alt="圖表圖示" width="30" height="30"
                     style="vertical-align: middle;"> 每日熱量攝取趨勢</h3>
             <canvas id="nutritionChart" width="800" height="300"></canvas>
         </div>
-        <div class="card">
+        <div class="card" id="record-section">
             <h3>🧾 飲食紀錄</h3>
             <div style="overflow-x: auto;">
                 <table>
@@ -551,6 +235,61 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <div class="floating-nav">
+        <ul>
+            <li class="iso-pro">
+                <span></span><span></span><span></span>
+                <a href="#calorie-progress-card" title="今日熱量">
+                    <svg class="svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z" />
+                        <path
+                            d="M208 64c-8.8 0-16 7.2-16 16v144H112c-8.8 0-16 7.2-16 16s7.2 16 16 16h96c8.8 0 16-7.2 16-16V80c0-8.8-7.2-16-16-16z"
+                            transform="translate(60, 60) scale(0.7)" />
+                        <path
+                            d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zM432 456a24 24 0 1 0 0-48 24 24 0 1 0 0 48z" />
+                        <path
+                            d="M192 0C79.7 101.3 0 220.9 0 300.5 0 425 79 512 192 512s192-87 192-211.5c0-79.9-80.2-199.6-192-300.5zm0 448c-56.5 0-96-39-96-94.8 0-13.5 4.2-25.5 11.4-35.4 19.4-26.6 54-52 84.6-39 30.6 12.9 41.9 49.4 26.4 79.1-11.5 22.1-26.4 54.5 6.1 54.5 16.1 0 26.3-14.5 38.2-30.6 16.8-22.9 42.8-58.2 42.8-102.1 0-5.7-.6-11.3-1.7-16.8C354.7 305.6 384 352 384 389.9c0 36.1-38.7 58.1-192 58.1z" />
+                    </svg>
+                </a>
+                <div class="text">熱量進度</div>
+            </li>
+
+            <li class="iso-pro">
+                <span></span><span></span><span></span>
+                <a href="#upload-section" title="上傳辨識">
+                    <svg class="svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M149.1 64.8L138.7 96H64C28.7 96 0 124.7 0 160V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64H373.3L362.9 64.8C356.4 45.2 338.1 32 317.4 32H194.6c-20.7 0-39 13.2-45.5 32.8zM256 192a96 96 0 1 1 0 192 96 96 0 1 1 0-192z" />
+                    </svg>
+                </a>
+                <div class="text">上傳新增</div>
+            </li>
+
+            <li class="iso-pro">
+                <span></span><span></span><span></span>
+                <a href="#history-section" title="歷史趨勢">
+                    <svg class="svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64V400c0 44.2 35.8 80 80 80H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H80c-8.8 0-16-7.2-16-16V64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L240 229.3l57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z" />
+                    </svg>
+                </a>
+                <div class="text">營養趨勢</div>
+            </li>
+
+            <li class="iso-pro">
+                <span></span><span></span><span></span>
+                <a href="#record-section" title="詳細紀錄">
+                    <svg class="svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M40 48C26.7 48 16 58.7 16 72v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V72c0-13.3-10.7-24-24-24H40zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zM16 232v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V232c0-13.3-10.7-24-24-24H40c-13.3 0-24 10.7-24 24zM40 368c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V392c0-13.3-10.7-24-24-24H40z" />
+                    </svg>
+                </a>
+                <div class="text">飲食紀錄</div>
+            </li>
+        </ul>
     </div>
 
     <script>
@@ -595,8 +334,8 @@
             const activityFactor = 1.375; // 預設為輕度活動
 
             let goalFactor = 1.0;
-            if (goal === '減重') goalFactor = 0.85;
-            if (goal === '增肌') goalFactor = 1.15;
+            if (goal === '減重') goalFactor = 0.90;
+            if (goal === '增肌') goalFactor = 1.10;
 
             const tdee = bmr * activityFactor * goalFactor;
             return tdee < 1200 ? 1200 : tdee; // 確保最低不小於 1200
@@ -1022,6 +761,8 @@
             }
         })
     </script>
+
+
 </body>
 
 </html>
