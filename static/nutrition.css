@@ -391,11 +391,10 @@ td ul li {
 }
 
 .calorie-hero-number {
-    font-size: 2.8rem;
+    font-size: 2rem;
     /* 44.8px - 讓攝取數字非常醒目 */
     font-weight: 700;
-    color: #e53935;
-    /* 紅色 */
+    color: #218952;
     line-height: 1;
 }
 
@@ -438,4 +437,38 @@ td ul li {
 /* 讓 calInfo 置中 */
 #calInfo {
     text-align: center;
+}
+
+/* --- ★ (新) 設定「今日熱量進度」標題顏色 ★ --- */
+#calorie-progress-card h3 {
+    color: #287934;
+    /* 改成和進度條一樣的紅色 */
+    font-weight: bold;
+}
+
+/* --- ★ (新) 綠色懸停邊框特效 (V5) ★ --- */
+
+/* 1. 建立一個新的 .card-hover-green 樣式 */
+/* 您可以將這個 class 加到任何 .card 元素上 */
+.card.card-hover-green {
+    /* 2. 套用範例的基礎樣式 */
+    /* 使用較粗的灰色邊框 */
+    border: 2px solid #c3c6ce;
+    /* 使用範例的過渡動畫 */
+    transition: 0.5s ease-out;
+
+    /* 3. 覆蓋 .card 預設陰影，改為更細微的 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 4. 建立懸停效果 */
+.card.card-hover-green:hover {
+    /* ★ 替換為綠色邊框 ★ */
+    /* (您範例中是紫色 #6c00f8) */
+    border-color: #4caf50;
+    /* 您的主題綠色 */
+
+    /* ★ 替換為綠色光暈 ★ */
+    /* (您範例中是白色光暈) */
+    box-shadow: 0 8px 30px 0 rgba(76, 175, 80, 0.25);
 }
