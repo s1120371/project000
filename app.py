@@ -119,11 +119,12 @@ item_translation_A = {
     'stir fried enoki mushrooms': '炒金針菇',
     'stir fried rapeseed': '炒油菜',
     'stir-fried rapeseed': '炒油菜', # 處理同義詞
-    'Fried sausages': '煎香腸',
-    'Stir-fried bean sprouts': '炒豆芽菜',
-    'Stir fried bean sprouts': '炒豆芽菜', # 處理同義詞
+    'fried sausages': '煎香腸',
+    'stir-fried bean sprouts': '炒豆芽菜',
+    'stir fried bean sprouts': '炒豆芽菜', # 處理同義詞
     'Stir-fried carrots': '炒紅蘿蔔',
     'Stir fried carrots': '炒紅蘿蔔', # 處理同義詞
+    'stir fried carrots': '炒紅蘿蔔', 
 }
 item_translation_B = {
     'rice': '米飯', 'eels on rice': '鰻魚飯', 'pilaf': '抓飯', 'chicken-\'n\'-egg on rice': '親子丼',
