@@ -29,8 +29,22 @@
     <div class="cursor-container">
         <img src="{{ url_for('static', filename='my-cursor.png') }}" />
     </div>
-    <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
-            height="25" style="vertical-align: middle;"> 返回主畫面</a>
+    <div class="game-back-button-container">
+        <a href="/home" style="text-decoration: none;">
+            <button class="pixel-button" type="button">
+                <div class="button-glow"></div>
+                <div class="button-body">
+                    <img src="{{ url_for('static', filename='home.png') }}" alt="icon"
+                        style="width: 20px; vertical-align: middle; margin-right:5px;">
+                    返回主畫面
+                </div>
+
+                <div class="pixel-home-icon"></div>
+
+                <div class="score-popup">GO!</div>
+            </button>
+        </a>
+    </div>
 
     <div class="container py-5">
         <div class="text-center mb-5 mb-5 page-title">
@@ -105,8 +119,9 @@
         </div>
         {% endif %}
 
-        <div class="save-section" id="main-save-section card-hover-green"
+        <div class="save-section card-hover-green" id="main-save-section"
             style="top: 10px; z-index: 900; display: none;">
+
             <h4>🍴 儲存今日飲食</h4>
             <p class="text-muted">請勾選下方辨識結果中您要儲存的食物項目，然後點擊按鈕</p>
             <button class="btn btn-success fw-bold" id="saveButton">💾 儲存並分析飲食</button>
@@ -120,7 +135,6 @@
                     style="white-space: pre-wrap; font-family: 'Zpix', sans-serif; line-height: 1.7;">...AI 正在分析中...</pre>
             </div>
         </div>
-
         <hr class="my-4">
 
         <div id="manual-cards-container">
@@ -491,10 +505,11 @@
             return response.json();
         }
 
-        // --- 1. 處理儲存邏輯 ---
+        // --- 1. 處理儲存邏輯 (增強版) ---
         function setupSaveLogic() {
             const saveButton = document.getElementById('saveButton');
             const saveStatus = document.getElementById('saveStatus');
+            // ★ 再次抓取 DOM，確保不是 null
             const aiBox = document.getElementById('aiEvaluationBox');
             const aiContent = document.getElementById('aiEvaluationContent');
 
@@ -512,16 +527,15 @@
                         return;
                     }
 
+                    // ... (收集資料部分保持不變) ...
                     let total_calories = 0, total_fat = 0, total_carbs = 0, total_protein = 0;
                     const foods_list = [];
-
                     checkedItems.forEach(item => {
                         const name = item.dataset.name;
                         const calories = parseFloat(item.dataset.calories || 0);
                         const fat = parseFloat(item.dataset.fat || 0);
                         const carbs = parseFloat(item.dataset.carbs || 0);
                         const protein = parseFloat(item.dataset.protein || 0);
-
                         total_calories += calories;
                         total_fat += fat;
                         total_carbs += carbs;
@@ -540,8 +554,15 @@
                     };
 
                     setStatus('儲存中...', 'info');
-                    aiBox.style.display = 'block';
-                    aiContent.textContent = '...餐點儲存中，AI 正在準備分析...';
+
+                    // ★ 強制顯示評價框 (並印出 log 確認)
+                    if (aiBox) {
+                        console.log("顯示 AI 評價框...");
+                        aiBox.style.display = 'block';
+                        if (aiContent) aiContent.textContent = '...餐點儲存中，AI 正在準備分析...';
+                    } else {
+                        console.error("找不到 id='aiEvaluationBox' 的元素！");
+                    }
 
                     try {
                         // --- 步驟一：儲存紀錄 ---
@@ -553,26 +574,27 @@
                         setStatus(`✅ 儲存成功！(共 ${foods_list.length} 項食物)`, 'success');
                         checkedItems.forEach(item => item.checked = false);
 
-                        // ★ (新) 儲存成功後，立刻重新載入所有資料 (包括熱量條)
                         await loadAllData();
 
                         // --- 步驟二：呼叫 AI 評價 ---
-                        aiContent.textContent = '...餐點已儲存，AI 正在分析您的飲食...';
+                        if (aiContent) aiContent.textContent = '...餐點已儲存，AI 正在分析您的飲食...';
 
                         try {
                             const evalResponse = await apiFetch('/api/evaluate-diet', {
                                 method: 'POST',
                                 body: JSON.stringify(recordData)
                             });
-                            aiContent.textContent = evalResponse.evaluation;
+                            if (aiContent) aiContent.textContent = evalResponse.evaluation;
 
                         } catch (evalErr) {
-                            aiContent.textContent = `❌ 載入 AI 評價時發生錯誤: ${evalErr.message}`;
+                            console.error("AI 分析失敗:", evalErr);
+                            if (aiContent) aiContent.textContent = `❌ 載入 AI 評價時發生錯誤: ${evalErr.message}`;
                         }
 
                     } catch (err) {
                         setStatus(`❌ 儲存失敗：${err.message}`, 'error');
-                        aiBox.style.display = 'none';
+                        // 失敗時隱藏
+                        if (aiBox) aiBox.style.display = 'none';
                     }
                 });
             }
@@ -584,7 +606,6 @@
                 }
             }
         }
-
         // --- ★ (新) 4. 處理上傳旋轉動畫 ---
         function setupUploadSpinner() {
             const form = document.getElementById('predict-form');
@@ -720,27 +741,51 @@
             });
         }
 
-        // --- 3. 頁面載入時執行 (★ 已修改 ★) ---
+        // --- 3. 頁面載入時執行 (增強版) ---
         document.addEventListener('DOMContentLoaded', async () => {
+            // 1. 初始化按鈕功能
             setupSaveLogic();
-            setupUploadSpinner(); // ★ (新) 啟用上傳動畫
-            setupManualAdd(); // <-- ★ 在此加入新函式的呼叫
-            // 如果有 AI 辨識結果，就顯示儲存按鈕
+            setupUploadSpinner();
+            setupManualAdd();
+
+            // 2. 檢查是否有 AI 辨識結果 (顯示儲存按鈕)
             if (document.querySelector('.result-img')) {
-                document.getElementById('main-save-section').style.display = 'block';
+                const saveSection = document.getElementById('main-save-section');
+                if (saveSection) saveSection.style.display = 'block';
             }
-            if (!idToken) {
-                statusEl.textContent = "❌ 請先登入才能查看或儲存歷史紀錄！";
-                document.getElementById('recordListBody').innerHTML = '<tr><td colspan="8">請先登入</td></tr>';
-                document.getElementById('calInfo').textContent = '請先登入以計算熱量目標。';
+
+            // 3. 檢查登入狀態
+            // ★ 強制重新讀取 Token，避免變數過期
+            const currentToken = sessionStorage.getItem('firebaseIdToken');
+
+            if (!currentToken) {
+                if (statusEl) statusEl.textContent = "❌ 請先登入才能查看或儲存歷史紀錄！";
+                const listBody = document.getElementById('recordListBody');
+                if (listBody) listBody.innerHTML = '<tr><td colspan="8">請先登入</td></tr>';
+                const calInfo = document.getElementById('calInfo');
+                if (calInfo) calInfo.textContent = '請先登入以計算熱量目標。';
                 return;
             }
 
-            // 載入所有頁面資料
-            await loadAllData();
+            // 4. 更新狀態：告訴使用者 JS 正在運作
+            if (statusEl) statusEl.textContent = "🔄 正在同步雲端資料...";
 
-            // 綁定刪除按鈕事件
-            document.getElementById('recordListBody').addEventListener('click', handleRecordDelete);
+            // 5. ★ 關鍵修正：使用 setTimeout 延遲載入 ★
+            // 這給了瀏覽器一點時間去處理 DOM 渲染，避免 POST 後卡死
+            setTimeout(async () => {
+                try {
+                    await loadAllData();
+                } catch (err) {
+                    console.error("載入失敗:", err);
+                    if (statusEl) statusEl.textContent = "❌ 資料載入失敗，請重新整理網頁";
+                }
+
+                // 綁定刪除按鈕事件
+                const listBody = document.getElementById('recordListBody');
+                if (listBody) {
+                    listBody.addEventListener('click', handleRecordDelete);
+                }
+            }, 300); // 延遲 300 毫秒
         });
     </script>
 
