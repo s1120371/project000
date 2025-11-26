@@ -144,24 +144,25 @@
         {% for res in all_results %}
         <div class="row g-4 mt-4 border-bottom pb-4 mb-4">
             <div class="col-lg-6">
+                <h2 class="h4 mb-3">🔍 辨識結果圖片</h2>
+
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header fw-bold">🔍 辨識結果圖片</div>
                     <div class="card-body text-center">
                         <img src="{{ res.result_image }}" class="img-fluid rounded shadow-sm result-img" alt="辨識結果">
                         <h5 class="mt-3">原始圖片：</h5>
                         <img src="{{ res.uploaded_image }}" class="img-fluid rounded shadow-sm result-img" alt="原始圖片">
                     </div>
                 </div>
+
                 {% if res.detected_foods %}
+                <h2 class="h4 mb-3">🍽️ 偵測到的食物</h2>
+
                 <div class="card shadow-sm card-hover-green">
-                    <div class="card-header fw-bold">🍽️ 偵測到的食物</div>
                     <div class="card-body">
                         <ul class="list-group list-group-flush">
                             {% for f in res.detected_foods %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 {{ f.name }}
-                                {% if f.source %}<span class="badge bg-secondary rounded-pill ms-1">模型 {{ f.source
-                                    }}</span>{% endif %}
                                 <span class="badge bg-success rounded-pill">信心度: {{ f.confidence }}</span>
                             </li>
                             {% endfor %}
@@ -175,36 +176,45 @@
                 {% if res.food_infos %}
                 <div class="d-flex flex-column gap-3">
                     {% for info in res.food_infos %}
-                    <div class="card shadow-sm">
+                    <div class="card shadow-sm card-hover-green mb-3">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="card-title mb-0">{{ info.food_name }}</h5>
-                                <div class="form-check">
+                            <div class="nutrition-card-title">
+                                <span>{{ info.food_name }}</span>
+                                <div class="form-check d-flex align-items-center">
                                     <input class="form-check-input save-food-item" type="checkbox"
                                         id="food-{{ res.result_image }}-{{ loop.index }}"
+                                        style="transform: scale(1.3); margin-right: 5px;"
                                         data-name="{{ info.food_name }}"
                                         data-calories="{{ info.index['熱量 (kcal)'] | default(0) }}"
                                         data-fat="{{ info.index['脂肪 (g)'] | default(0) }}"
                                         data-carbs="{{ info.index['碳水化合物 (g)'] | default(0) }}"
                                         data-protein="{{ info.index['蛋白質 (g)'] | default(0) }}" checked>
-                                    <label class="form-check-label" for="food-{{ res.result_image }}-{{ loop.index }}">
-                                        儲存
+                                    <label class="form-check-label text-muted small"
+                                        for="food-{{ res.result_image }}-{{ loop.index }}">
+                                        加入紀錄
                                     </label>
                                 </div>
                             </div>
-                            {% if info.source %}<h6 class="card-subtitle mb-2 text-muted">來源: 模型 {{ info.source }}</h6>
-                            {% endif %}
-                            <h6 class="card-subtitle mb-2 text-muted">信心度: {{ info.confidence }}</h6>
-                            <p class="card-text"><small>{{ info.food_description }}</small></p>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-light text-dark border">信心度: {{ info.confidence }}</span>
+                            </div>
+
+                            <p class="card-text small text-muted mb-3">{{ info.food_description }}</p>
+
                             {% if info.index %}
-                            <ul class="list-group list-group-flush mt-3">
+                            <div class="nutrient-grid">
                                 {% for key, value in info.index.items() %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                    {{ key }}
-                                    <span class="badge bg-primary rounded-pill">{{ value }}</span>
-                                </li>
+                                <div class="nutrient-item">
+                                    <span class="nutrient-label">
+                                        {% if '熱量' in key %}🔥{% elif '蛋白' in key %}💪{% elif '脂肪' in key %}💧{% elif
+                                        '碳水' in key %}🍚{% else %}🍽️{% endif %}
+                                        {{ key.split(' ')[0] }}
+                                    </span>
+                                    <div class="nutrient-value">{{ value }}</div>
+                                </div>
                                 {% endfor %}
-                            </ul>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -220,7 +230,7 @@
         {% endfor %}
         {% endif %}
         <hr class="my-5">
-        <div class="text-center">
+        <div class="text-center page-title">
             <h2 class="display-6 fw-bold"><img src="{{ url_for('static', filename='chart.png') }}" alt="趨勢圖圖示"
                     width="40" height="40" style="vertical-align: middle;"> 營養攝取歷史</h2>
         </div>
@@ -233,7 +243,18 @@
         <div class="card card-hover-green" id="record-section">
             <h3>🧾 飲食紀錄</h3>
             <div style="overflow-x: auto;">
-                <table>
+                <table class="record-table">
+                    <colgroup>
+                        <col class="col-date">
+                        <col class="col-time">
+                        <col class="col-food">
+                        <col class="col-num">
+                        <col class="col-num">
+                        <col class="col-num">
+                        <col class="col-num">
+                        <col class="col-action">
+                    </colgroup>
+
                     <thead>
                         <tr>
                             <th>日期</th>
@@ -246,7 +267,8 @@
                             <th>操作</th>
                         </tr>
                     </thead>
-                    <tbody id="recordListBody"></tbody>
+                    <tbody id="recordListBody">
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -407,52 +429,67 @@
             // 建立營養項目列表 (如果 index 存在)
             let indexHtml = '';
             if (data.index) {
-                indexHtml = '<ul class="list-group list-group-flush mt-3">';
+                indexHtml = '<div class="nutrient-grid">';
+                // 定義圖示對應 (可選)
+                const icons = {
+                    '熱量': '🔥',
+                    '蛋白質': '💪',
+                    '脂肪': '💧',
+                    '碳水化合物': '🍚'
+                };
+
                 for (const [key, value] of Object.entries(data.index)) {
+                    // 簡單拆分名稱與單位，例如 "熱量 (kcal)" -> Name: 熱量, Unit: kcal
+                    let cleanName = key.split(' ')[0];
+                    let icon = icons[cleanName] || '🍽️';
+
                     indexHtml += `
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        ${key}
-                        <span class="badge bg-primary rounded-pill">${value}</span>
-                    </li>`;
+        <div class="nutrient-item">
+            <span class="nutrient-label">${icon} ${cleanName}</span>
+            <div class="nutrient-value">${value}</div>
+        </div>`;
                 }
-                indexHtml += '</ul>';
+                indexHtml += '</div>';
             }
 
-            // 組合卡片 HTML
+            // 組合卡片 HTML (使用新的 class)
             const cardHTML = `
-            <div class="row g-4 mt-2 border-bottom pb-4 mb-4 manual-card">
-                <div class="col-lg-6">
-                    <h2 class="h4 mb-3" style="color: #0d6efd;">🥗 (手動新增) 詳細營養資訊</h2>
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="card-title mb-0">${data.food_name}</h5>
-                                <div class="form-check">
-                                    <input class="form-check-input save-food-item" type="checkbox"
-                                        id="${uniqueId}"
-                                        data-name="${data.food_name}"
-                                        data-calories="${data.index['熱量 (kcal)'] || 0}"
-                                        data-fat="${data.index['脂肪 (g)'] || 0}"
-                                        data-carbs="${data.index['碳水化合物 (g)'] || 0}"
-                                        data-protein="${data.index['蛋白質 (g)'] || 0}" checked>
-                                    <label class="form-check-label" for="${uniqueId}">
-                                        儲存
-                                    </label>
-                                </div>
-                            </div>
-                            <h6 class="card-subtitle mb-2 text-muted">來源: 手動查詢 (FatSecret)</h6>
-                            <p class="card-text"><small>${data.food_description || ''}</small></p>
-                            ${indexHtml}
-                        </div>
+<div class="row g-4 mt-2 border-bottom pb-4 mb-4 manual-card align-items-stretch">
+    <div class="col-lg-7">
+        <h2 class="h4 mb-3">🥗 手動新增項目</h2>
+        <div class="card shadow-sm h-100 card-hover-green">
+            <div class="card-body">
+                <div class="nutrition-card-title">
+                    ${data.food_name}
+                    <div class="form-check">
+                        <input class="form-check-input save-food-item" type="checkbox"
+                            id="${uniqueId}"
+                            style="transform: scale(1.3);"
+                            data-name="${data.food_name}"
+                            data-calories="${data.index['熱量 (kcal)'] || 0}"
+                            data-fat="${data.index['脂肪 (g)'] || 0}"
+                            data-carbs="${data.index['碳水化合物 (g)'] || 0}"
+                            data-protein="${data.index['蛋白質 (g)'] || 0}" checked>
+                        <label class="form-check-label small text-muted ms-1" for="${uniqueId}">
+                            儲存
+                        </label>
                     </div>
                 </div>
-                <div class="col-lg-6">
-                    <div class="alert alert-info" role="alert">
-                        這是手動新增的項目，沒有辨識圖片。
-                    </div>
-                </div>
+                <h6 class="card-subtitle mb-3 text-muted small">來源: FatSecret 資料庫</h6>
+                <p class="card-text small text-secondary">${data.food_description || ''}</p>
+                ${indexHtml}
             </div>
-            `;
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="alert manual-alert-box rounded-3" role="alert">
+            <div>
+                <i class="bi bi-info-circle"></i> 這是手動新增的項目<br>沒有辨識圖片
+            </div>
+        </div>
+    </div>
+</div>
+`;
 
             container.insertAdjacentHTML('afterbegin', cardHTML); // 插入到容器最頂部
             // 一旦手動新增了卡片，就顯示儲存按鈕
