@@ -15,11 +15,20 @@
     body {
       margin: 0;
       font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #f7f9fc;
+
+      /* background-color: #f7f9fc; */
+      /* <-- 原本這行註解掉或刪除 */
+      background-color: transparent;
+      /* <-- ★ 改成透明 */
+
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+
+      position: relative;
+      /* 確保 z-index 生效 */
+      z-index: 1;
     }
 
     .card {
@@ -185,10 +194,135 @@
       transform: rotate(360deg);
       /* 卡片懸停時，讓 h1 裡的圖片旋轉 */
     }
+
+    /* --- ★ (新) 動態背景 CSS ★ --- */
+    .aurora-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      /* 確保在所有內容(包括 .card)之下 */
+      overflow: hidden;
+      background-color: #f7f9fc;
+      /* 預設底色 */
+    }
+
+    .aurora-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.6;
+    }
+
+    .shape-1 {
+      background-color: #88ff96;
+      width: 40vmin;
+      height: 40vmin;
+      top: 0;
+      left: 0;
+      animation: move-path-1 6s infinite alternate ease-in-out;
+    }
+
+    .shape-2 {
+      background-color: #aaefff;
+      width: 35vmin;
+      height: 35vmin;
+      top: 0;
+      left: 50%;
+      animation: move-path-2 5s infinite alternate ease-in-out 1s;
+    }
+
+    .shape-3 {
+      background-color: #4CAF50;
+      width: 45vmin;
+      height: 45vmin;
+      top: 0;
+      right: 0;
+      animation: move-path-3 7s infinite alternate ease-in-out;
+    }
+
+    .shape-4 {
+      background-color: #c6ffcd;
+      width: 30vmin;
+      height: 30vmin;
+      top: 50%;
+      right: 0;
+      animation: move-path-4 8s infinite alternate ease-in-out 2s;
+    }
+
+    .shape-5 {
+      background-color: #4CAF50;
+      width: 25vmin;
+      height: 25vmin;
+      bottom: 0;
+      right: 0;
+      animation: move-path-1 9s infinite alternate-reverse ease-in-out;
+    }
+
+    .shape-6 {
+      background-color: #fdeff9;
+      width: 30vmin;
+      height: 30vmin;
+      bottom: 0;
+      left: 50%;
+      animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
+    }
+
+    @keyframes move-path-1 {
+      from {
+        transform: translate(-20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(100vw - 80%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-2 {
+      from {
+        transform: translate(-50%, -20%);
+      }
+
+      to {
+        transform: translate(-50%, calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-3 {
+      from {
+        transform: translate(20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-4 {
+      from {
+        transform: translate(20%, -50%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), -50%);
+      }
+    }
   </style>
 </head>
 
 <body>
+
+  <div class="aurora-background">
+    <div class="aurora-shape shape-1"></div>
+    <div class="aurora-shape shape-2"></div>
+    <div class="aurora-shape shape-3"></div>
+    <div class="aurora-shape shape-4"></div>
+    <div class="aurora-shape shape-5"></div>
+    <div class="aurora-shape shape-6"></div>
+  </div>
+
   <div class="cursor-container">
     <img src="{{ url_for('static', filename='my-cursor.png') }}" />
   </div>
