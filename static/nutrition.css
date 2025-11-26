@@ -498,3 +498,469 @@ td ul li {
     color: #555 !important;
     /* 覆蓋 text-muted 的灰色 */
 }
+
+/* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+/* 1. 定位容器 (取代原本 #backButton 的定位) */
+.game-back-button-container {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    z-index: 1001;
+    /* 確保在最上層 */
+}
+
+.pixel-button {
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    /* ★ 使用 Zpix 字體 ★ */
+    font-family: 'Zpix', sans-serif;
+    font-size: 16px;
+    /* 稍微調大字體 */
+    image-rendering: pixelated;
+    transition: all 0.1s ease;
+}
+
+.button-body {
+    position: relative;
+    /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+    background: #ff6b35;
+    color: #fff;
+    padding: 10px 20px;
+    /* 調整內距 */
+    border: 3px solid #000;
+    box-shadow:
+        inset 3px 3px 0px #ff8c5a,
+        inset -3px -3px 0px #cc4a1a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+    text-shadow: 2px 2px 0px #000;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+/* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+.pixel-home-icon {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    /* 設定背景圖為 home.png */
+    background-image: url('/static/home.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    /* 預設隱藏 */
+    z-index: 10;
+    pointer-events: none;
+}
+
+.button-glow {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+    background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+    border-radius: 6px;
+    opacity: 0;
+    z-index: 1;
+    animation: rainbow-glow 0.5s ease-in-out infinite;
+    /* 加上 infinite 讓它一直閃 */
+    display: none;
+    /* 預設隱藏，hover 時顯示 */
+}
+
+/* --- Hover 效果 --- */
+.pixel-button:hover .button-body {
+    background: #35ff6b;
+    /* Hover 變綠色 */
+    box-shadow:
+        inset 3px 3px 0px #5aff8c,
+        inset -3px -3px 0px #1acc4a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
+    color: #000;
+    /* 綠底配黑字比較清楚 */
+    text-shadow: none;
+}
+
+.pixel-button:hover .button-glow {
+    opacity: 0.8;
+    display: block;
+}
+
+/* ★ 觸發彈出動畫 ★ */
+.pixel-button:hover .pixel-home-icon {
+    animation: home-pop-up 0.6s ease-out;
+}
+
+.pixel-button:active .button-body {
+    background: #ff35ff;
+    /* 點擊變紫色 */
+    transform: translate(3px, 3px) scale(0.98);
+    box-shadow:
+        inset 3px 3px 0px #ff5aff,
+        inset -3px -3px 0px #cc1acc,
+        0px 0px 0px #000,
+        3px 3px 0px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    text-shadow: 2px 2px 0px #000;
+}
+
+/* 分數/文字彈出 */
+.score-popup {
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-size: 12px;
+    color: #ffd700;
+    text-shadow: 1px 1px 0 #000;
+    opacity: 0;
+    pointer-events: none;
+    font-family: 'Zpix', sans-serif;
+}
+
+.pixel-button:active .score-popup {
+    animation: score-popup-anim 0.6s ease-out;
+}
+
+/* --- 動畫定義 --- */
+
+/* Icon 彈出動畫 */
+@keyframes home-pop-up {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px) scale(0.5);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-25px) scale(1.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px) scale(1);
+    }
+}
+
+@keyframes score-popup-anim {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-15px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+}
+
+@keyframes rainbow-glow {
+    0% {
+        opacity: 0.5;
+        filter: hue-rotate(0deg);
+    }
+
+    100% {
+        opacity: 0.8;
+        filter: hue-rotate(360deg);
+    }
+}
+
+/* --- ★ (新) 表格與欄位優化 ★ --- */
+
+/* 讓表格容器有圓角與陰影，並設定最小寬度避免手機版擠成一團 */
+#record-section div[style*="overflow-x: auto;"] {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+}
+
+table {
+    width: 100%;
+    min-width: 800px;
+    /* ★ 關鍵：設定最小寬度，讓手機版可以滑動，而不是擠壓欄位 */
+    border-collapse: separate;
+    /* 為了讓 border-radius 生效 */
+    border-spacing: 0;
+    margin-top: 0;
+    /* 移除原本的 margin */
+    background: #fff;
+}
+
+/* 表頭設計 */
+th {
+    background-color: #2e7d32;
+    /* 深綠色主色 */
+    color: white;
+    font-weight: 600;
+    padding: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    white-space: nowrap;
+    /* 標題不換行 */
+}
+
+/* 表頭圓角處理 */
+th:first-child {
+    border-top-left-radius: 12px;
+}
+
+th:last-child {
+    border-top-right-radius: 12px;
+}
+
+/* 內容欄位設計 */
+td {
+    padding: 16px 12px;
+    /* 增加內距，讓畫面呼吸 */
+    border-bottom: 1px solid #f0f0f0;
+    border-right: none;
+    border-left: none;
+    border-top: none;
+    vertical-align: middle;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+/* 隔行變色優化 */
+tr:nth-child(even) {
+    background-color: #f8fcf8;
+    /* 極淺的綠色背景 */
+}
+
+tr:hover {
+    background-color: #e8f5e9;
+    /* 滑鼠經過時的綠色高亮 */
+    transition: background-color 0.2s;
+}
+
+/* --- ★ (新) 針對特定欄位設定寬度與樣式 ★ --- */
+
+/* 日期與時間：置中、不換行 */
+.col-date,
+.col-time {
+    width: 10%;
+    text-align: center;
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
+    /* 像發票一樣的字體 */
+    font-weight: bold;
+    color: #666;
+}
+
+/* 食物清單：靠左對齊，給予最大空間 */
+.col-food {
+    width: 30%;
+    text-align: left;
+}
+
+/* 營養素數據：置中，稍微加粗 */
+.col-num {
+    width: 10%;
+    text-align: center;
+    font-weight: 600;
+    color: #2e7d32;
+}
+
+/* 操作按鈕：置中 */
+.col-action {
+    width: 10%;
+    text-align: center;
+}
+
+/* 讓食物清單內的 ul 更好看 */
+td ul li {
+    background: transparent;
+    padding: 2px 0;
+    margin-bottom: 2px;
+    color: #333;
+    list-style-type: disc;
+    margin-left: 20px;
+    font-size: 0.9rem;
+}
+
+/* --- ★ (新) 輸入框優化 (上傳區與手動輸入區) ★ --- */
+
+.form-control {
+    border-radius: 8px;
+    /* 圓角 */
+    padding: 12px 15px;
+    /* 讓輸入框變高，比較好點擊 */
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+.form-control:focus {
+    border-color: #4caf50;
+    /* 聚焦變綠色 */
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+    /* 綠色光暈 */
+    background-color: #fff;
+}
+
+/* 按鈕微調 */
+.btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* --- ★ (新) 詳細營養卡片優化 ★ --- */
+
+/* 1. 卡片標題優化 */
+.nutrition-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 2. 營養素改為網格佈局 (Grid) */
+.nutrient-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 手機版一行兩個 */
+    gap: 10px;
+    margin-top: 15px;
+}
+
+@media (min-width: 768px) {
+    .nutrient-grid {
+        grid-template-columns: repeat(4, 1fr);
+        /* 電腦版一行四個 */
+    }
+}
+
+/* 3. 單個營養素方塊設計 */
+.nutrient-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.nutrient-item:hover {
+    transform: translateY(-3px);
+    border-color: #81c784;
+    background-color: #f1f8e9;
+}
+
+.nutrient-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.nutrient-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #2e7d32;
+}
+
+.nutrient-unit {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* 4. 區塊標題美化 (原本的大字標題) */
+h2.h4 {
+    font-size: 1.1rem !important;
+    color: #555;
+    border-left: 5px solid #4caf50;
+    padding-left: 12px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* 5. 圖片區域優化 */
+.result-img-container {
+    position: sticky;
+    top: 20px;
+    /* 讓圖片在捲動時稍微固定 */
+}
+
+/* 6. 手動新增的藍色提示框對齊 */
+.manual-alert-box {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e3f2fd;
+    border: 1px dashed #2196f3;
+    color: #0d47a1;
+}
+
+/* --- ★ (修正) 統一標題風格：灰色文字 + 左側綠線 ★ --- */
+
+/* 1. 針對左側欄位所有的卡片標題 (包含「辨識結果圖片」與「偵測到的食物」) */
+.col-lg-6 .card-header {
+    /* 強制移除原本 Bootstrap 或是之前加的漸層背景色 */
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: none !important;
+    /* 移除標題下方的分隔線 */
+
+    /* 設定文字樣式：灰色 (#555)、加粗 */
+    color: #555 !important;
+    font-weight: bold;
+    font-size: 1.1rem;
+    /* 確保與右側標題大小一致 */
+
+    /* 設定左側綠線 (關鍵樣式) */
+    border-left: 5px solid #4caf50 !important;
+    padding-left: 12px !important;
+    /* 文字與線的距離 */
+    border-radius: 0 !important;
+
+    /* 位置調整：讓標題稍微往內縮，不要貼齊卡片邊緣 */
+    margin: 20px 0 10px 20px;
+    width: fit-content;
+    /* 讓綠線高度只包住文字，不會拉很長 */
+    line-height: 1.4;
+}
+
+/* 2. 確保右側的標題樣式也保持一致 (雙重確認) */
+h2.h4 {
+    color: #555 !important;
+    font-weight: bold;
+    font-size: 1.1rem !important;
+    border-left: 5px solid #4caf50;
+    padding-left: 12px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* 3. 保留卡片本身的圓角與浮起陰影 (但不影響標題) */
+.col-lg-6 .card.shadow-sm.mb-4:first-child {
+    border: none;
+    border-radius: 16px;
+    /* 讓陰影稍微柔和一點 */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05) !important;
+}
