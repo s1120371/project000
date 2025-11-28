@@ -183,15 +183,17 @@
     }
 
     .key[data-type="water"]::before {
-  content: "";
-  display: inline-block;
-  width: 20px; /* 根據你的圖片大小調整 */
-  height: 20px; /* 根據你的圖片大小調整 */
-  background-image: url('{{ url_for("static", filename="water.png") }}');
-  background-size: cover;
-  margin-right: 6px;
-  vertical-align: middle;
-}
+      content: "";
+      display: inline-block;
+      width: 20px;
+      /* 根據你的圖片大小調整 */
+      height: 20px;
+      /* 根據你的圖片大小調整 */
+      background-image: url('{{ url_for("static", filename="water.png") }}');
+      background-size: cover;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
 
     .key[data-type="ex"]::before {
       content: "🏃";
@@ -428,6 +430,191 @@
         transform: translate(calc(-100vw + 120%), -50%);
       }
     }
+
+    /* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+    /* 1. 定位容器 (取代原本 #backButton 的定位) */
+    .game-back-button-container {
+      position: fixed;
+      top: 50px;
+      right: 20px;
+      z-index: 1001;
+      /* 確保在最上層 */
+    }
+
+    .pixel-button {
+      position: relative;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      /* ★ 使用 Zpix 字體 ★ */
+      font-family: 'Zpix', sans-serif;
+      font-size: 16px;
+      /* 稍微調大字體 */
+      image-rendering: pixelated;
+      transition: all 0.1s ease;
+    }
+
+    .button-body {
+      position: relative;
+      /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+      background: #35ff72;
+      color: #fff;
+      padding: 10px 20px;
+      /* 調整內距 */
+      border: 3px solid #000;
+      box-shadow:
+        inset 3px 3px 0px #5aff68,
+        inset -3px -3px 0px #1acc26,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      text-shadow: 2px 2px 0px #000;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    /* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+    .pixel-home-icon {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      /* 設定背景圖為 home.png */
+      background-image: url('/static/home.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      /* 預設隱藏 */
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .button-glow {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+      border-radius: 6px;
+      opacity: 0;
+      z-index: 1;
+      animation: rainbow-glow 0.5s ease-in-out infinite;
+      /* 加上 infinite 讓它一直閃 */
+      display: none;
+      /* 預設隱藏，hover 時顯示 */
+    }
+
+    /* --- Hover 效果 --- */
+    .pixel-button:hover .button-body {
+      background: #35ff6b;
+      /* Hover 變綠色 */
+      box-shadow:
+        inset 3px 3px 0px #5aff8c,
+        inset -3px -3px 0px #1acc4a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      transform: scale(1.05);
+      color: #000;
+      /* 綠底配黑字比較清楚 */
+      text-shadow: none;
+    }
+
+    .pixel-button:hover .button-glow {
+      opacity: 0.8;
+      display: block;
+    }
+
+    /* ★ 觸發彈出動畫 ★ */
+    .pixel-button:hover .pixel-home-icon {
+      animation: home-pop-up 0.6s ease-out;
+    }
+
+    .pixel-button:active .button-body {
+      background: #ff35ff;
+      /* 點擊變紫色 */
+      transform: translate(3px, 3px) scale(0.98);
+      box-shadow:
+        inset 3px 3px 0px #ff5aff,
+        inset -3px -3px 0px #cc1acc,
+        0px 0px 0px #000,
+        3px 3px 0px rgba(0, 0, 0, 0.3);
+      color: #fff;
+      text-shadow: 2px 2px 0px #000;
+    }
+
+    /* 分數/文字彈出 */
+    .score-popup {
+      position: absolute;
+      top: -20px;
+      right: -10px;
+      font-size: 12px;
+      color: #ffd700;
+      text-shadow: 1px 1px 0 #000;
+      opacity: 0;
+      pointer-events: none;
+      font-family: 'Zpix', sans-serif;
+    }
+
+    .pixel-button:active .score-popup {
+      animation: score-popup-anim 0.6s ease-out;
+    }
+
+    /* --- 動畫定義 --- */
+
+    /* Icon 彈出動畫 */
+    @keyframes home-pop-up {
+      0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px) scale(0.5);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-25px) scale(1.2);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px) scale(1);
+      }
+    }
+
+    @keyframes score-popup-anim {
+      0% {
+        opacity: 0;
+        transform: translateY(0);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateY(-15px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+    }
+
+    @keyframes rainbow-glow {
+      0% {
+        opacity: 0.5;
+        filter: hue-rotate(0deg);
+      }
+
+      100% {
+        opacity: 0.8;
+        filter: hue-rotate(360deg);
+      }
+    }
   </style>
 </head>
 
@@ -445,9 +632,22 @@
   <div class="cursor-container">
     <img src="{{ url_for('static', filename='my-cursor.png') }}" />
   </div>
-  <a href="/home" id="backButton"><img src="{{ url_for('static', filename='home.png') }}" alt="返回圖示" width="25"
-      height="25" style="vertical-align: middle;"> 返回主畫面</a>
-  <h2><img src="{{ url_for('static', filename='ach.png') }}" alt="獎盃圖示" width="25"height="25"style="vertical-align: middle;"> 健康目標</h2>
+  <div class="game-back-button-container">
+    <a href="/home" style="text-decoration: none;">
+      <button class="pixel-button" type="button">
+        <div class="button-glow"></div>
+        <div class="button-body">
+          <img src="{{ url_for('static', filename='home.png') }}" alt="icon"
+            style="width: 20px; vertical-align: middle; margin-right:5px;">
+          返回主畫面
+        </div>
+        <div class="pixel-home-icon"></div>
+        <div class="score-popup">GO!</div>
+      </button>
+    </a>
+  </div>
+  <h2><img src="{{ url_for('static', filename='ach.png') }}" alt="獎盃圖示" width="25" height="25"
+      style="vertical-align: middle;"> 健康目標</h2>
   <p style="margin-bottom:10px;color:#555">點擊快速鍵或輸入自訂數值來記錄飲水與運動，達成目標自動解鎖徽章！</p>
   <section class="card">
     <div class="row" style="justify-content: space-between;">
@@ -463,11 +663,14 @@
     </div>
     <div class="spacer-24"></div>
     <section class="card">
-      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='date.png') }}" alt="日曆圖示" width="23"height="23"style="vertical-align: middle;"> 記錄日期</h3><input type="date" id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='date.png') }}" alt="日曆圖示" width="23"
+          height="23" style="vertical-align: middle;"> 記錄日期</h3><input type="date"
+        id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
     </section>
     <div class="grid grid-2">
       <div class="card" style="margin:0;">
-        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"height="23"style="vertical-align: middle;"> 今日飲水</h3>
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"
+            height="23" style="vertical-align: middle;"> 今日飲水</h3>
         <div class="row"><strong>已喝</strong>
           <div id="waterNow" style="font-weight:700;">0</div>
           <div>ml</div>
@@ -490,7 +693,8 @@
         </div>
       </div>
       <div class="card" style="margin:0;">
-        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"height="25"style="vertical-align: middle;"> 今日運動</h3>
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"
+            height="25" style="vertical-align: middle;"> 今日運動</h3>
         <div class="row"><strong>已運動</strong>
           <div id="exNow" style="font-weight:700;">0</div>
           <div>分鐘</div>
@@ -515,16 +719,20 @@
     </div>
   </section>
   <section class="card">
-    <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='badge.png') }}" alt="徽章圖示" width="25"height="25"style="vertical-align: middle;"> 今日徽章</h3>
+    <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='badge.png') }}" alt="徽章圖示" width="25"
+        height="25" style="vertical-align: middle;"> 今日徽章</h3>
     <div id="badges" class="row" style="gap:10px;"></div>
   </section>
   <div class="spacer-24"></div>
   <section class="grid grid-2">
     <div class="card">
-      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"height="23"style="vertical-align: middle;"> 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"
+          height="23" style="vertical-align: middle;"> 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
     </div>
     <div class="card">
-      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"height="25"style="vertical-align: middle;"> 近七天運動趨勢</h3><canvas id="exerciseTrendChart" height="120"></canvas>
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"
+          height="25" style="vertical-align: middle;"> 近七天運動趨勢</h3><canvas id="exerciseTrendChart"
+        height="120"></canvas>
     </div>
   </section>
   <div class="spacer-24"></div>
