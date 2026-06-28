@@ -1,0 +1,15 @@
+flask
+torch
+torchvision
+ultralytics
+opencv-python-headless
+numpy
+pillow
+firebase-admin
+requests
+requests-oauthlib
+deep-translator
+langchain-google-genai
+langchain-core
+python-dotenv
+gunicorn

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>編輯資料</title>
+  <link rel="icon" href="{{ url_for('static', filename='edit.png') }}" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
+  <style>
+    /* 引入 zpix 字體 */
+    @font-face {
+      font-family: 'Zpix';
+      src: url('/static/zpix.ttf') format('truetype');
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f7f9fc;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #2e7d32;
+    }
+
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 40px;
+    }
+
+    form input,
+    form select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .checkbox-group label {
+      display: inline-block;
+      margin-right: 15px;
+      font-weight: normal;
+    }
+
+    .status-success {
+      color: #2e7d32;
+    }
+
+    .status-error {
+      color: #d32f2f;
+    }
+
+    /* 滑鼠設定 */
+    .cursor-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .cursor-container img {
+      width: 40px;
+      height: 40px;
+      position: absolute;
+      top: -20px;
+      left: -20px;
+    }
+
+    #backButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #2196f3;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s ease;
+      z-index: 1000;
+      /* 提高層級確保在背景之上 */
+    }
+
+    #backButton:hover {
+      background-color: #1976d2;
+    }
+
+    /* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+    /* 1. 定位容器 (取代原本 #backButton 的定位) */
+    .game-back-button-container {
+      position: fixed;
+      top: 50px;
+      right: 20px;
+      z-index: 1001;
+      /* 確保在最上層 */
+    }
+
+    .pixel-button {
+      position: relative;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      /* ★ 使用 Zpix 字體 ★ */
+      font-family: 'Zpix', sans-serif;
+      font-size: 16px;
+      /* 稍微調大字體 */
+      image-rendering: pixelated;
+      transition: all 0.1s ease;
+    }
+
+    .button-body {
+      position: relative;
+      /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+      background: #35ff72;
+      color: #fff;
+      padding: 10px 20px;
+      /* 調整內距 */
+      border: 3px solid #000;
+      box-shadow:
+        inset 3px 3px 0px #5aff68,
+        inset -3px -3px 0px #1acc26,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      text-shadow: 2px 2px 0px #000;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    /* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+    .pixel-home-icon {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      /* 設定背景圖為 home.png */
+      background-image: url('/static/home.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      /* 預設隱藏 */
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .button-glow {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+      border-radius: 6px;
+      opacity: 0;
+      z-index: 1;
+      animation: rainbow-glow 0.5s ease-in-out infinite;
+      /* 加上 infinite 讓它一直閃 */
+      display: none;
+      /* 預設隱藏，hover 時顯示 */
+    }
+
+    /* --- Hover 效果 --- */
+    .pixel-button:hover .button-body {
+      background: #35ff6b;
+      /* Hover 變綠色 */
+      box-shadow:
+        inset 3px 3px 0px #5aff8c,
+        inset -3px -3px 0px #1acc4a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      transform: scale(1.05);
+      color: #000;
+      /* 綠底配黑字比較清楚 */
+      text-shadow: none;
+    }
+
+    .pixel-button:hover .button-glow {
+      opacity: 0.8;
+      display: block;
+    }
+
+    /* ★ 觸發彈出動畫 ★ */
+    .pixel-button:hover .pixel-home-icon {
+      animation: home-pop-up 0.6s ease-out;
+    }
+
+    .pixel-button:active .button-body {
+      background: #ff35ff;
+      /* 點擊變紫色 */
+      transform: translate(3px, 3px) scale(0.98);
+      box-shadow:
+        inset 3px 3px 0px #ff5aff,
+        inset -3px -3px 0px #cc1acc,
+        0px 0px 0px #000,
+        3px 3px 0px rgba(0, 0, 0, 0.3);
+      color: #fff;
+      text-shadow: 2px 2px 0px #000;
+    }
+
+    /* 分數/文字彈出 */
+    .score-popup {
+      position: absolute;
+      top: -20px;
+      right: -10px;
+      font-size: 12px;
+      color: #ffd700;
+      text-shadow: 1px 1px 0 #000;
+      opacity: 0;
+      pointer-events: none;
+      font-family: 'Zpix', sans-serif;
+    }
+
+    .pixel-button:active .score-popup {
+      animation: score-popup-anim 0.6s ease-out;
+    }
+
+    /* --- 動畫定義 --- */
+
+    /* Icon 彈出動畫 */
+    @keyframes home-pop-up {
+      0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px) scale(0.5);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-25px) scale(1.2);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px) scale(1);
+      }
+    }
+
+    @keyframes score-popup-anim {
+      0% {
+        opacity: 0;
+        transform: translateY(0);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateY(-15px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+    }
+
+    @keyframes rainbow-glow {
+      0% {
+        opacity: 0.5;
+        filter: hue-rotate(0deg);
+      }
+
+      100% {
+        opacity: 0.8;
+        filter: hue-rotate(360deg);
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
+</head>
+
+<body>
+  <!-- 滑鼠設定 -->
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
+  <div class="game-back-button-container">
+    <a href="/home" style="text-decoration: none;">
+      <button class="pixel-button" type="button">
+        <div class="button-glow"></div>
+        <div class="button-body">
+          <img src="{{ url_for('static', filename='home.png') }}" alt="icon"
+            style="width: 20px; vertical-align: middle; margin-right:5px;">
+          返回主畫面
+        </div>
+        <div class="pixel-home-icon"></div>
+        <div class="score-popup">GO!</div>
+      </button>
+    </a>
+  </div>
+  <div class="container">
+    <h2><img src="{{ url_for('static', filename='person.png') }}" alt="人像圖示" width="25" height="25"
+        style="vertical-align: middle;"> 修改個人資料</h2>
+    <form id="editForm">
+      <label>帳號</label>
+      <input type="text" name="username" required />
+      <label>姓名</label>
+      <input type="text" name="fullname" required />
+      <label>生日</label>
+      <input type="date" name="birthdate" required />
+      <label>性別</label>
+      <select name="gender" required>
+        <option value="男">男</option>
+        <option value="女">女</option>
+        <option value="其他">其他</option>
+      </select>
+      <label>過敏原</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="allergens" value="蛋"> 蛋</label>
+        <label><input type="checkbox" name="allergens" value="奶"> 奶</label>
+        <label><input type="checkbox" name="allergens" value="花生"> 花生</label>
+        <label><input type="checkbox" name="allergens" value="海鮮"> 海鮮</label>
+        <label><input type="checkbox" name="allergens" value="堅果"> 堅果</label>
+      </div>
+      <label>飲食習慣</label>
+      <select name="diet" required>
+        <option value="一般葷食">一般葷食</option>
+        <option value="蛋奶素">蛋奶素</option>
+        <option value="全素">全素</option>
+      </select>
+      <label>健康目標</label>
+      <select name="goal" required>
+        <option value="減重">減重</option>
+        <option value="增肌">增肌</option>
+        <option value="控制血糖">控制血糖</option>
+        <option value="一般健康">一般健康</option>
+      </select>
+      <button type="submit">💾 儲存個資</button>
+    </form>
+
+    <h2>🔐 修改密碼</h2>
+    <form id="passwordForm">
+      <label>輸入新密碼</label>
+      <input type="password" id="newPassword" placeholder="新密碼 (至少6位數)" required />
+      <button type="submit">變更密碼</button>
+    </form>
+
+    <p id="status"></p>
+    <br>
+    <button id="logoutBtn" style="background-color: #757575;">登出</button>
+  </div>
+
+  <script>
+    const statusText = document.getElementById("status");
+    const editForm = document.getElementById("editForm");
+    const passwordForm = document.getElementById("passwordForm");
+    const idToken = sessionStorage.getItem('firebaseIdToken');
+
+    // --- API Helper ---
+    async function apiFetch(endpoint, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+      const response = await fetch(endpoint, { ...options, headers });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    // --- Page Initialization ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!idToken) {
+        statusText.textContent = "請先登入，將導向登入頁...";
+        statusText.className = 'status-error';
+        setTimeout(() => window.location.href = "/login", 2000);
+        return;
+      }
+      try {
+        // 從後端 API 取得使用者資料並填入表單
+        const data = await apiFetch('/api/user-profile');
+        editForm.username.value = data.username || "";
+        editForm.fullname.value = data.fullname || "";
+        editForm.birthdate.value = data.birthdate || "";
+        editForm.gender.value = data.gender || "";
+        editForm.diet.value = data.diet || "";
+        editForm.goal.value = data.goal || "";
+        const allergens = data.allergens || [];
+        editForm.querySelectorAll('input[name="allergens"]').forEach(input => {
+          input.checked = allergens.includes(input.value);
+        });
+      } catch (err) {
+        statusText.textContent = `❌ 讀取資料失敗：${err.message}`;
+        statusText.className = 'status-error';
+      }
+    });
+
+    // --- Event Listeners ---
+    editForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const updatedData = {
+        username: editForm.username.value,
+        fullname: editForm.fullname.value,
+        birthdate: editForm.birthdate.value,
+        gender: editForm.gender.value,
+        diet: editForm.diet.value,
+        goal: editForm.goal.value,
+        allergens: Array.from(editForm.querySelectorAll('input[name="allergens"]:checked')).map(cb => cb.value),
+      };
+      try {
+        const result = await apiFetch('/api/user-profile', {
+          method: 'POST',
+          body: JSON.stringify(updatedData)
+        });
+        statusText.textContent = `✅ ${result.message}`;
+        statusText.className = 'status-success';
+      } catch (err) {
+        statusText.textContent = `❌ 更新失敗：${err.message}`;
+        statusText.className = 'status-error';
+      }
+    });
+
+    passwordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById("newPassword").value;
+      try {
+        const result = await apiFetch('/api/update-password', {
+          method: 'POST',
+          body: JSON.stringify({ password: newPassword })
+        });
+        statusText.textContent = `✅ ${result.message}`;
+        statusText.className = 'status-success';
+        passwordForm.reset();
+      } catch (err) {
+        statusText.textContent = `❌ 密碼修改失敗：${err.message}`;
+        statusText.className = 'status-error';
+      }
+    });
+
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      window.location.href = "/home";
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      sessionStorage.removeItem('firebaseIdToken');
+      window.location.href = "/login";
+    });
+  </script>
+  <!-- 滑鼠js -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
+  </script>
+</body>
+
+</html>

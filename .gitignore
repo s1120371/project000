@@ -1,0 +1,7 @@
+.env
+serviceAccountKey.json
+__pycache__/
+*.py[cod]
+healthweb-ui-redesign/
+static/uploads/
+static/results/

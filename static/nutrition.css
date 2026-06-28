@@ -1,0 +1,966 @@
+/* static/nutrition.css */
+
+body {
+    /* 注意：這裡的 background-color: transparent 
+      是為了讓 style.css 的 aurora-background 
+      能夠顯示出來 
+    */
+    background-color: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+#backButton {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #2196f3;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+    z-index: 1000;
+}
+
+.container {
+    max-width: 960px;
+}
+
+.card-title {
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.upload-card {
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    padding: 2rem;
+}
+
+.result-img {
+    border: 3px solid #dee2e6;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+.save-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.save-section .btn-success {
+    font-family: 'Zpix', sans-serif;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+#saveStatus {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.status-success {
+    color: #198754;
+}
+
+.status-error {
+    color: #dc3545;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e6e9ef;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(30, 60, 90, .06);
+    padding: 20px;
+    margin-bottom: 28px;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    background-color: #4caf50;
+    color: white;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+td ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+td ul li {
+    background: #e8f5e9;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+
+.delete-btn {
+    font-family: 'Zpix', sans-serif;
+    background-color: #e53935;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#aiEvaluationBox {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    text-align: left;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+
+#aiEvaluationBox h5 {
+    color: #0d6efd;
+}
+
+#aiEvaluationContent {
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+/* 進度條 CSS */
+.progress {
+    height: 14px;
+    background: #edf2f7;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e53935 0%, #ff6b6b 100%);
+    transition: width .3s ease;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* --- 左側懸浮導航欄樣式 (Modified from Uiverse.io) --- */
+
+.floating-nav {
+    position: fixed;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2000;
+    /* 確保在最上層 */
+
+    max-width: fit-content;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    justify-content: center;
+    gap: 1rem;
+
+    /* 玻璃擬態背景 */
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.192),
+        inset 0 0 5px rgba(255, 255, 255, 0.274),
+        0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: 0.5s;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.floating-nav:hover {
+    animation: ease-out 5s;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.floating-nav ul {
+    padding: 1rem;
+    display: flex;
+    list-style: none;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    align-content: center;
+    flex-wrap: wrap;
+    flex-direction: column;
+    margin-bottom: 0;
+    /* 覆蓋 bootstrap */
+}
+
+.floating-nav ul li {
+    cursor: pointer;
+    position: relative;
+}
+
+.svg {
+    transition: all 0.3s;
+    padding: 12px;
+    /* 調整 padding 讓圖示適中 */
+    height: 50px;
+    width: 50px;
+    border-radius: 100%;
+    color: #555;
+    /* 預設顏色 */
+    fill: currentColor;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3),
+        inset 0 0 5px rgba(255, 255, 255, 0.5), 0 5px 5px rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.text {
+    opacity: 0;
+    border-radius: 5px;
+    padding: 5px 10px;
+    transition: all 0.3s;
+    color: #333;
+    background-color: rgba(255, 255, 255, 0.9);
+    position: absolute;
+    left: 60px;
+    /* 文字顯示在右側 */
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+/* Isometric Projection Hover Effects */
+.iso-pro {
+    transition: 0.5s;
+}
+
+.iso-pro:hover a>.svg {
+    transform: translate(5px, -5px);
+    /* 稍微浮起 */
+    border-radius: 100%;
+}
+
+.iso-pro:hover .text {
+    opacity: 1;
+    transform: translate(10px, -50%);
+    /* 文字浮現位置 */
+}
+
+.iso-pro span {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    transition: all 0.3s;
+    height: 50px;
+    width: 50px;
+    z-index: -1;
+}
+
+.iso-pro:hover span {
+    opacity: 1;
+}
+
+.iso-pro:hover span:nth-child(1) {
+    opacity: 0.2;
+}
+
+.iso-pro:hover span:nth-child(2) {
+    opacity: 0.4;
+    transform: translate(2px, -2px);
+}
+
+.iso-pro:hover span:nth-child(3) {
+    opacity: 0.6;
+    transform: translate(4px, -4px);
+}
+
+/* --- 個別顏色設定 (配合您的主題色) --- */
+
+/* 1. 熱量 (紅色/橘色) */
+.iso-pro:nth-child(1):hover .svg {
+    color: #e53935;
+    box-shadow: 0 0 10px #e53935aa, inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.iso-pro:nth-child(1) span {
+    background: #e53935;
+    box-shadow: 0 0 10px #e53935;
+}
+
+/* 2. 上傳 (藍色) */
+.iso-pro:nth-child(2):hover .svg {
+    color: #2196f3;
+    box-shadow: 0 0 10px #2196f3aa, inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.iso-pro:nth-child(2) span {
+    background: #2196f3;
+    box-shadow: 0 0 10px #2196f3;
+}
+
+/* 3. 歷史趨勢 (綠色) */
+.iso-pro:nth-child(3):hover .svg {
+    color: #4caf50;
+    box-shadow: 0 0 10px #4caf50aa, inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.iso-pro:nth-child(3) span {
+    background: #4caf50;
+    box-shadow: 0 0 10px #4caf50;
+}
+
+/* 4. 紀錄 (深色/紫色) */
+.iso-pro:nth-child(4):hover .svg {
+    color: #673ab7;
+    box-shadow: 0 0 10px #673ab7aa, inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.iso-pro:nth-child(4) span {
+    background: #673ab7;
+    box-shadow: 0 0 10px #673ab7;
+}
+
+/* 手機版隱藏 (避免遮擋內容) */
+@media (max-width: 768px) {
+    .floating-nav {
+        display: none;
+    }
+}
+
+/* --- ★ (新) 熱量進度條美化 (V3) ★ --- */
+
+.calorie-display {
+    display: flex;
+    align-items: baseline;
+    /* 讓 "0" 和 "/ 2000 kcal" 底部對齊 */
+    justify-content: center;
+    margin: 10px 0;
+    /* 增加上下間距 */
+}
+
+.calorie-hero-number {
+    font-size: 2rem;
+    /* 44.8px - 讓攝取數字非常醒目 */
+    font-weight: 700;
+    color: #218952;
+    line-height: 1;
+}
+
+.calorie-hero-unit {
+    font-size: 1rem;
+    /* 16px */
+    color: #555;
+    margin-left: 8px;
+    font-weight: 700;
+    /* 讓 "kcal" 對齊 "0" 的底部 */
+    transform: translateY(-2px);
+}
+
+.progress-container {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+/* 讓 Bootstrap 的 progress bar 變粗 */
+#calorie-progress-card .progress {
+    height: 24px;
+    font-size: 0.9rem;
+    /* 14.4px */
+    font-weight: 700;
+    /* 移除 .progress 的預設背景，讓 bar 的背景更突出 */
+    background-color: #e9ecef;
+}
+
+/* 讓 bar 裡面的文字 (calPct) 永遠置中 */
+#calorie-progress-card .bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    /* 確保文字在 bar 裡面 */
+    white-space: nowrap;
+}
+
+/* 讓 calInfo 置中 */
+#calInfo {
+    text-align: center;
+}
+
+/* --- ★ (新) 設定「今日熱量進度」標題顏色 ★ --- */
+#calorie-progress-card h3 {
+    color: #287934;
+    /* 改成和進度條一樣的紅色 */
+    font-weight: bold;
+}
+
+/* --- ★ (新) 綠色懸停邊框特效 (V5) ★ --- */
+
+/* 1. 建立一個新的 .card-hover-green 樣式 */
+/* 您可以將這個 class 加到任何 .card 元素上 */
+.card.card-hover-green {
+    /* 2. 套用範例的基礎樣式 */
+    /* 使用較粗的灰色邊框 */
+    border: 2px solid #c3c6ce;
+    /* 使用範例的過渡動畫 */
+    transition: 0.5s ease-out;
+
+    /* 3. 覆蓋 .card 預設陰影，改為更細微的 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 4. 建立懸停效果 */
+.card.card-hover-green:hover {
+    /* ★ 替換為綠色邊框 ★ */
+    /* (您範例中是紫色 #6c00f8) */
+    border-color: #4caf50;
+    /* 您的主題綠色 */
+
+    /* ★ 替換為綠色光暈 ★ */
+    /* (您範例中是白色光暈) */
+    box-shadow: 0 8px 30px 0 rgba(76, 175, 80, 0.25);
+}
+
+/* --- ★ (新) 標題美化：漸層文字特效 ★ --- */
+
+.page-title h1 {
+    /* 1. 定義漸層背景 (使用您的主題色：綠色到藍色) */
+    background: linear-gradient(90deg, #2e7d32, #659a7b);
+
+    /* 2. 將背景裁切為文字的形狀 */
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    /* 3. 讓文字本身變透明，以顯示底下的漸層 */
+    color: transparent;
+
+    /* 4. 確保漸層正確顯示 (有時需要) */
+    display: inline-block;
+    padding-bottom: 5px;
+    /* 增加一點點底部空間 */
+}
+
+/* (可選) 讓底下的 <p> 說明文字也變粗一點 */
+.page-title .lead {
+    font-weight: bold;
+    color: #555 !important;
+    /* 覆蓋 text-muted 的灰色 */
+}
+
+/* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+/* 1. 定位容器 (取代原本 #backButton 的定位) */
+.game-back-button-container {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    z-index: 1001;
+    /* 確保在最上層 */
+}
+
+.pixel-button {
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    /* ★ 使用 Zpix 字體 ★ */
+    font-family: 'Zpix', sans-serif;
+    font-size: 16px;
+    /* 稍微調大字體 */
+    image-rendering: pixelated;
+    transition: all 0.1s ease;
+}
+
+.button-body {
+    position: relative;
+    /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+    background: #35ff72;
+    color: #fff;
+    padding: 10px 20px;
+    /* 調整內距 */
+    border: 3px solid #000;
+    box-shadow:
+        inset 3px 3px 0px #5aff68,
+        inset -3px -3px 0px #1acc26,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+    text-shadow: 2px 2px 0px #000;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+/* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+.pixel-home-icon {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    /* 設定背景圖為 home.png */
+    background-image: url('/static/home.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    /* 預設隱藏 */
+    z-index: 10;
+    pointer-events: none;
+}
+
+.button-glow {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+    background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+    border-radius: 6px;
+    opacity: 0;
+    z-index: 1;
+    animation: rainbow-glow 0.5s ease-in-out infinite;
+    /* 加上 infinite 讓它一直閃 */
+    display: none;
+    /* 預設隱藏，hover 時顯示 */
+}
+
+/* --- Hover 效果 --- */
+.pixel-button:hover .button-body {
+    background: #35ff6b;
+    /* Hover 變綠色 */
+    box-shadow:
+        inset 3px 3px 0px #5aff8c,
+        inset -3px -3px 0px #1acc4a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
+    color: #000;
+    /* 綠底配黑字比較清楚 */
+    text-shadow: none;
+}
+
+.pixel-button:hover .button-glow {
+    opacity: 0.8;
+    display: block;
+}
+
+/* ★ 觸發彈出動畫 ★ */
+.pixel-button:hover .pixel-home-icon {
+    animation: home-pop-up 0.6s ease-out;
+}
+
+.pixel-button:active .button-body {
+    background: #ff35ff;
+    /* 點擊變紫色 */
+    transform: translate(3px, 3px) scale(0.98);
+    box-shadow:
+        inset 3px 3px 0px #ff5aff,
+        inset -3px -3px 0px #cc1acc,
+        0px 0px 0px #000,
+        3px 3px 0px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    text-shadow: 2px 2px 0px #000;
+}
+
+/* 分數/文字彈出 */
+.score-popup {
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-size: 12px;
+    color: #ffd700;
+    text-shadow: 1px 1px 0 #000;
+    opacity: 0;
+    pointer-events: none;
+    font-family: 'Zpix', sans-serif;
+}
+
+.pixel-button:active .score-popup {
+    animation: score-popup-anim 0.6s ease-out;
+}
+
+/* --- 動畫定義 --- */
+
+/* Icon 彈出動畫 */
+@keyframes home-pop-up {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px) scale(0.5);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-25px) scale(1.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px) scale(1);
+    }
+}
+
+@keyframes score-popup-anim {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-15px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+}
+
+@keyframes rainbow-glow {
+    0% {
+        opacity: 0.5;
+        filter: hue-rotate(0deg);
+    }
+
+    100% {
+        opacity: 0.8;
+        filter: hue-rotate(360deg);
+    }
+}
+
+/* --- ★ (新) 表格與欄位優化 ★ --- */
+
+/* 讓表格容器有圓角與陰影，並設定最小寬度避免手機版擠成一團 */
+#record-section div[style*="overflow-x: auto;"] {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+}
+
+table {
+    width: 100%;
+    min-width: 800px;
+    /* ★ 關鍵：設定最小寬度，讓手機版可以滑動，而不是擠壓欄位 */
+    border-collapse: separate;
+    /* 為了讓 border-radius 生效 */
+    border-spacing: 0;
+    margin-top: 0;
+    /* 移除原本的 margin */
+    background: #fff;
+}
+
+/* 表頭設計 */
+th {
+    background-color: #2e7d32;
+    /* 深綠色主色 */
+    color: white;
+    font-weight: 600;
+    padding: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    white-space: nowrap;
+    /* 標題不換行 */
+}
+
+/* 表頭圓角處理 */
+th:first-child {
+    border-top-left-radius: 12px;
+}
+
+th:last-child {
+    border-top-right-radius: 12px;
+}
+
+/* 內容欄位設計 */
+td {
+    padding: 16px 12px;
+    /* 增加內距，讓畫面呼吸 */
+    border-bottom: 1px solid #f0f0f0;
+    border-right: none;
+    border-left: none;
+    border-top: none;
+    vertical-align: middle;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+/* 隔行變色優化 */
+tr:nth-child(even) {
+    background-color: #f8fcf8;
+    /* 極淺的綠色背景 */
+}
+
+tr:hover {
+    background-color: #e8f5e9;
+    /* 滑鼠經過時的綠色高亮 */
+    transition: background-color 0.2s;
+}
+
+/* --- ★ (新) 針對特定欄位設定寬度與樣式 ★ --- */
+
+/* 日期與時間：置中、不換行 */
+.col-date,
+.col-time {
+    width: 10%;
+    text-align: center;
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
+    /* 像發票一樣的字體 */
+    font-weight: bold;
+    color: #666;
+}
+
+/* 食物清單：靠左對齊，給予最大空間 */
+.col-food {
+    width: 30%;
+    text-align: left;
+}
+
+/* 營養素數據：置中，稍微加粗 */
+.col-num {
+    width: 10%;
+    text-align: center;
+    font-weight: 600;
+    color: #2e7d32;
+}
+
+/* 操作按鈕：置中 */
+.col-action {
+    width: 10%;
+    text-align: center;
+}
+
+/* 讓食物清單內的 ul 更好看 */
+td ul li {
+    background: transparent;
+    padding: 2px 0;
+    margin-bottom: 2px;
+    color: #333;
+    list-style-type: disc;
+    margin-left: 20px;
+    font-size: 0.9rem;
+}
+
+/* --- ★ (新) 輸入框優化 (上傳區與手動輸入區) ★ --- */
+
+.form-control {
+    border-radius: 8px;
+    /* 圓角 */
+    padding: 12px 15px;
+    /* 讓輸入框變高，比較好點擊 */
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+.form-control:focus {
+    border-color: #4caf50;
+    /* 聚焦變綠色 */
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+    /* 綠色光暈 */
+    background-color: #fff;
+}
+
+/* 按鈕微調 */
+.btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* --- ★ (新) 詳細營養卡片優化 ★ --- */
+
+/* 1. 卡片標題優化 */
+.nutrition-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 2. 營養素改為網格佈局 (Grid) */
+.nutrient-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 手機版一行兩個 */
+    gap: 10px;
+    margin-top: 15px;
+}
+
+@media (min-width: 768px) {
+    .nutrient-grid {
+        grid-template-columns: repeat(4, 1fr);
+        /* 電腦版一行四個 */
+    }
+}
+
+/* 3. 單個營養素方塊設計 */
+.nutrient-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.nutrient-item:hover {
+    transform: translateY(-3px);
+    border-color: #81c784;
+    background-color: #f1f8e9;
+}
+
+.nutrient-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.nutrient-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #2e7d32;
+}
+
+.nutrient-unit {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* 4. 區塊標題美化 (原本的大字標題) */
+h2.h4 {
+    font-size: 1.1rem !important;
+    color: #555;
+    border-left: 5px solid #4caf50;
+    padding-left: 12px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* 5. 圖片區域優化 */
+.result-img-container {
+    position: sticky;
+    top: 20px;
+    /* 讓圖片在捲動時稍微固定 */
+}
+
+/* 6. 手動新增的藍色提示框對齊 */
+.manual-alert-box {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e3f2fd;
+    border: 1px dashed #2196f3;
+    color: #0d47a1;
+}
+
+/* --- ★ (修正) 統一標題風格：灰色文字 + 左側綠線 ★ --- */
+
+/* 1. 針對左側欄位所有的卡片標題 (包含「辨識結果圖片」與「偵測到的食物」) */
+.col-lg-6 .card-header {
+    /* 強制移除原本 Bootstrap 或是之前加的漸層背景色 */
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: none !important;
+    /* 移除標題下方的分隔線 */
+
+    /* 設定文字樣式：灰色 (#555)、加粗 */
+    color: #555 !important;
+    font-weight: bold;
+    font-size: 1.1rem;
+    /* 確保與右側標題大小一致 */
+
+    /* 設定左側綠線 (關鍵樣式) */
+    border-left: 5px solid #4caf50 !important;
+    padding-left: 12px !important;
+    /* 文字與線的距離 */
+    border-radius: 0 !important;
+
+    /* 位置調整：讓標題稍微往內縮，不要貼齊卡片邊緣 */
+    margin: 20px 0 10px 20px;
+    width: fit-content;
+    /* 讓綠線高度只包住文字，不會拉很長 */
+    line-height: 1.4;
+}
+
+/* 2. 確保右側的標題樣式也保持一致 (雙重確認) */
+h2.h4 {
+    color: #555 !important;
+    font-weight: bold;
+    font-size: 1.1rem !important;
+    border-left: 5px solid #4caf50;
+    padding-left: 12px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* 3. 保留卡片本身的圓角與浮起陰影 (但不影響標題) */
+.col-lg-6 .card.shadow-sm.mb-4:first-child {
+    border: none;
+    border-radius: 16px;
+    /* 讓陰影稍微柔和一點 */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05) !important;
+}

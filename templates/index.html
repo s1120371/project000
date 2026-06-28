@@ -5,57 +5,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康飲食問答AI</title>
+    <link rel="icon" href="{{ url_for('static', filename='heart.png') }}" type="image/png">
     <style>
+        /* 引入 zpix 字體 */
+        @font-face {
+            font-family: 'Zpix';
+            src: url('/static/zpix.ttf') format('truetype');
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            /* 使用 Zpix 字體 */
+            font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             background-color: #f0f4f8;
+            overflow: hidden;
         }
 
+        #three-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* 聊天框透明度 */
         #chat-container {
+            position: relative;
+            z-index: 10;
             width: 90%;
             max-width: 600px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             height: 80vh;
+            overflow: hidden;
         }
 
+
         #header {
-            background-color: #4CAF50;
+            background-color: rgba(59, 153, 42, 0.875);
             color: white;
             padding: 16px;
             text-align: center;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
         }
 
         #chat-box {
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto;
-            border-bottom: 1px solid #ddd;
         }
 
         #input-area {
             display: flex;
             padding: 16px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.3);
         }
 
         #user-input {
             flex-grow: 1;
-            border: 1px solid #ccc;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 20px;
             padding: 10px 15px;
             font-size: 16px;
             margin-right: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            font-family: 'Zpix', sans-serif;
         }
 
         #send-btn {
@@ -74,96 +100,591 @@
             background-color: #45a049;
         }
 
+        /* --- ★ 還原為玻璃質感氣泡樣式 --- */
         .message {
-            margin-bottom: 15px;
             padding: 10px 15px;
             border-radius: 18px;
             max-width: 80%;
+            color: #333;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            word-wrap: break-word;
+            /* 確保長文字能換行 */
         }
 
         .user-message {
-            background-color: #e1f5fe;
-            align-self: flex-end;
-            margin-left: auto;
+            background-color: rgba(198, 221, 180, 0.75);
+            /* 半透明綠色 */
         }
 
         .ai-message {
-            background-color: #f1f1f1;
-            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.75);
+            /* 半透明白色 */
+        }
+
+        /* 移除了所有 .nes-balloon 相關的 CSS */
+
+        #backButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #2196f3;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+            z-index: 20;
+        }
+
+        #backButton:hover {
+            background-color: #1976d2;
+        }
+
+        #user-input,
+        #send-btn,
+        #backButton,
+        a {
+            /* 鼠標 */
+            cursor: url("{{ url_for('static', filename='my-cursor.png') }}") 0 0,
+            auto;
+        }
+
+        .cursor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            /* <-- 這是關鍵！設為最高層級 */
+        }
+
+        .cursor-container img {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            top: -20px;
+            left: -20px;
+        }
+
+        /* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+        /* 1. 定位容器 (取代原本 #backButton 的定位) */
+        .game-back-button-container {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            z-index: 1001;
+            /* 確保在最上層 */
+        }
+
+        .pixel-button {
+            position: relative;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            /* ★ 使用 Zpix 字體 ★ */
+            font-family: 'Zpix', sans-serif;
+            font-size: 16px;
+            /* 稍微調大字體 */
+            image-rendering: pixelated;
+            transition: all 0.1s ease;
+        }
+
+        .button-body {
+            position: relative;
+            /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+            background: #35ff72;
+            color: #fff;
+            padding: 10px 20px;
+            /* 調整內距 */
+            border: 3px solid #000;
+            box-shadow:
+                inset 3px 3px 0px #5aff68,
+                inset -3px -3px 0px #1acc26,
+                3px 3px 0px #000,
+                6px 6px 0px rgba(0, 0, 0, 0.3);
+            text-shadow: 2px 2px 0px #000;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        /* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+        .pixel-home-icon {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            /* 設定背景圖為 home.png */
+            background-image: url('/static/home.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            /* 預設隱藏 */
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .button-glow {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+            border-radius: 6px;
+            opacity: 0;
+            z-index: 1;
+            animation: rainbow-glow 0.5s ease-in-out infinite;
+            /* 加上 infinite 讓它一直閃 */
+            display: none;
+            /* 預設隱藏，hover 時顯示 */
+        }
+
+        /* --- Hover 效果 --- */
+        .pixel-button:hover .button-body {
+            background: #35ff6b;
+            /* Hover 變綠色 */
+            box-shadow:
+                inset 3px 3px 0px #5aff8c,
+                inset -3px -3px 0px #1acc4a,
+                3px 3px 0px #000,
+                6px 6px 0px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+            color: #000;
+            /* 綠底配黑字比較清楚 */
+            text-shadow: none;
+        }
+
+        .pixel-button:hover .button-glow {
+            opacity: 0.8;
+            display: block;
+        }
+
+        /* ★ 觸發彈出動畫 ★ */
+        .pixel-button:hover .pixel-home-icon {
+            animation: home-pop-up 0.6s ease-out;
+        }
+
+        .pixel-button:active .button-body {
+            background: #ff35ff;
+            /* 點擊變紫色 */
+            transform: translate(3px, 3px) scale(0.98);
+            box-shadow:
+                inset 3px 3px 0px #ff5aff,
+                inset -3px -3px 0px #cc1acc,
+                0px 0px 0px #000,
+                3px 3px 0px rgba(0, 0, 0, 0.3);
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* 分數/文字彈出 */
+        .score-popup {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            font-size: 12px;
+            color: #ffd700;
+            text-shadow: 1px 1px 0 #000;
+            opacity: 0;
+            pointer-events: none;
+            font-family: 'Zpix', sans-serif;
+        }
+
+        .pixel-button:active .score-popup {
+            animation: score-popup-anim 0.6s ease-out;
+        }
+
+        /* --- 動畫定義 --- */
+
+        /* Icon 彈出動畫 */
+        @keyframes home-pop-up {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(10px) scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-25px) scale(1.2);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-40px) scale(1);
+            }
+        }
+
+        @keyframes score-popup-anim {
+            0% {
+                opacity: 0;
+                transform: translateY(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-15px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+
+        @keyframes rainbow-glow {
+            0% {
+                opacity: 0.5;
+                filter: hue-rotate(0deg);
+            }
+
+            100% {
+                opacity: 0.8;
+                filter: hue-rotate(360deg);
+            }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
 </head>
 
 <body>
+    <div class="cursor-container">
+        <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+    </div>
+
+    <canvas id="three-bg"></canvas>
+
+    <div class="game-back-button-container">
+        <a href="/home" style="text-decoration: none;">
+            <button class="pixel-button" type="button">
+                <div class="button-glow"></div>
+                <div class="button-body">
+                    <img src="{{ url_for('static', filename='home.png') }}" alt="icon"
+                        style="width: 20px; vertical-align: middle; margin-right:5px;">
+                    返回主畫面
+                </div>
+                <div class="pixel-home-icon"></div>
+                <div class="score-popup">GO!</div>
+            </button>
+        </a>
+    </div>
+
     <div id="chat-container">
         <div id="header">
             <h2>健康飲食問答 AI</h2>
+            <p id="auth-status" style="font-size: 0.8em; margin-top: 5px;">正在檢查登入狀態...</p>
         </div>
-        <div id="chat-box">
-            <div class="message ai-message">哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！</div>
-        </div>
+        <div id="chat-box"></div>
         <div id="input-area">
             <input type="text" id="user-input" placeholder="在這裡輸入你的問題...">
             <button id="send-btn">➤</button>
         </div>
     </div>
 
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.172.0/build/three.module.js"
+      }
+    }
+  </script>
+
+    <script type="module">
+        // Three.js 程式碼維持不變
+        import * as THREE from 'three';
+
+        const canvas = document.getElementById('three-bg');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
+        camera.position.z = 10;
+
+        const width = 20;
+        const segments = 200;
+        const waveCount = 3;
+        const waveLines = [];
+
+        const colors = [0x00cc88, 0x22dd88, 0x88ffaa];
+        const opacities = [0.9, 0.6, 0.4];
+        const offsets = [0, -0.3, -0.6];
+
+        for (let j = 0; j < waveCount; j++) {
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * width - width / 2;
+                points.push(new THREE.Vector3(x, 0, 0));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: colors[j],
+                transparent: true,
+                opacity: opacities[j],
+                linewidth: 2
+            });
+            const line = new THREE.Line(geometry, material);
+            line.position.y = offsets[j];
+            scene.add(line);
+            waveLines.push(line);
+        }
+
+        const loader = new THREE.TextureLoader();
+        const foods = [
+            "{{ url_for('static', filename='soup.png') }}",
+            "{{ url_for('static', filename='apple.png') }}",
+            "{{ url_for('static', filename='1.png') }}",
+            "{{ url_for('static', filename='my-cursor.png') }}",
+            "{{ url_for('static', filename='corn.png') }}",
+            "{{ url_for('static', filename='1.png') }}",
+            "{{ url_for('static', filename='apple.png') }}",
+            "{{ url_for('static', filename='my-cursor.png') }}",
+            "{{ url_for('static', filename='1.png') }}",
+
+        ].map((url, i) => {
+            const tex = loader.load(url);
+            const mat = new THREE.SpriteMaterial({
+                map: tex,
+                transparent: true,
+                opacity: 1.0 // 設定為 100% 不透明
+            });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.5, 0.5, 1);//調整食物大小
+            sprite.position.x = -6 + i * 4;
+            sprite.position.y = 1;
+            scene.add(sprite);
+            return sprite;
+        });
+
+        const waveLayers = [
+            [
+                { amp: 0.4, freq: 1.2, speed: 1.5, phase: 0 },
+                { amp: 0.2, freq: 2.5, speed: 1.2, phase: Math.PI / 3 }
+            ],
+            [
+                { amp: 0.3, freq: 1.0, speed: 1.1, phase: Math.PI / 4 },
+                { amp: 0.15, freq: 3.2, speed: 0.9, phase: Math.PI / 2 }
+            ],
+            [
+                { amp: 0.2, freq: 0.8, speed: 0.6, phase: Math.PI },
+                { amp: 0.1, freq: 2.0, speed: 0.5, phase: Math.PI / 5 }
+            ]
+        ];
+
+        const clock = new THREE.Clock();
+
+        function getWaveY(x, t, layer) {
+            return waveLayers[layer].reduce((sum, w) =>
+                sum + Math.sin(x * w.freq + t * w.speed + w.phase) * w.amp, 0);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            waveLines.forEach((line, layer) => {
+                const pos = line.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = getWaveY(x, t, layer) + offsets[layer];
+                    pos.setY(i, y);
+                }
+                pos.needsUpdate = true;
+            });
+
+            foods.forEach((f, i) => {
+                f.position.x += Math.sin(t * 0.5 + i) * 0.01;
+                const y = getWaveY(f.position.x, t, 0);
+                f.position.y = y + 0.4;//波浪與食物的高度
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            renderer.setSize(innerWidth, innerHeight);
+        });
+    </script>
+
     <script>
+        // JavaScript 邏輯維持不變
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const authStatus = document.getElementById('auth-status');
 
-        // 當按下送出按鈕時觸發
-        sendBtn.addEventListener('click', sendMessage);
-
-        // 當在輸入框按下 Enter 鍵時觸發
-        userInput.addEventListener('keypress', function (event) {
-            if (event.key === 'Enter') {
-                sendMessage();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const idToken = sessionStorage.getItem('firebaseIdToken');
+            if (idToken) {
+                sendBtn.disabled = false;
+                userInput.disabled = false;
+                try {
+                    const response = await fetch('/api/user-profile', {
+                        headers: { 'Authorization': `Bearer ${idToken}` }
+                    });
+                    if (response.ok) {
+                        const profile = await response.json();
+                        authStatus.textContent = `已登入：${profile.email}`;
+                    } else {
+                        authStatus.textContent = '已登入 (驗證資訊可能已過期)';
+                    }
+                } catch (e) {
+                    authStatus.textContent = '已登入';
+                }
+                await loadChatHistory(idToken);
+            } else {
+                authStatus.textContent = "⚠ 您尚未登入，請先前往主頁登入！";
+                sendBtn.disabled = true;
+                userInput.disabled = true;
+                appendMessage('請先<a href="/login">登入</a>才能使用個人化問答功能。', 'ai');
             }
         });
 
-        async function sendMessage() {
-            const question = userInput.value.trim();
-            if (question === '') return;
-
-            // 在聊天室顯示使用者自己的問題
-            appendMessage(question, 'user');
-            userInput.value = ''; // 清空輸入框
-
-            // 顯示 "思考中..." 的提示
-            const thinkingMessage = appendMessage('...', 'ai');
-
+        async function loadChatHistory(idToken) {
             try {
-                // 使用 fetch API 將問題 POST 到我們的 Flask 後端 /ask
-                const response = await fetch('/ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ question: question })
+                const response = await fetch('/api/chat-history', {
+                    headers: { 'Authorization': `Bearer ${idToken}` }
                 });
-
-                const data = await response.json();
-
-                // 將 "思考中..." 的訊息更新為 AI 的真正答案
-                thinkingMessage.innerText = data.answer;
-
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const history = await response.json();
+                if (history.length === 0) {
+                    appendMessage('哈囉！我是你的健康小幫手，有什麼關於健康飲食的問題都可以問我喔！', 'ai');
+                } else {
+                    chatBox.innerHTML = '';
+                    history.forEach(msg => {
+                        const senderType = msg.role === 'assistant' ? 'ai' : 'user';
+                        appendMessage(msg.content, senderType);
+                    });
+                }
             } catch (error) {
-                console.error('Error:', error);
-                thinkingMessage.innerText = '糟糕，發生了一點錯誤，請稍後再試。';
+                console.error('無法載入對話紀錄:', error);
+                appendMessage(`無法載入對話紀錄: ${error.message}`, 'ai');
             }
         }
 
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') sendMessage();
+        });
+
+        async function sendMessage() {
+            const idToken = sessionStorage.getItem('firebaseIdToken');
+            if (!idToken) {
+                alert("驗證資訊已失效，請重新登入！");
+                window.location.href = '/login';
+                return;
+            }
+            const question = userInput.value.trim();
+            if (question === '') return;
+            appendMessage(question, 'user');
+            userInput.value = '';
+
+            const thinkingMessageDiv = appendMessage('AI 思考中...', 'ai');
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.answer || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                thinkingMessageDiv.innerHTML = formatMessage(data.answer);
+            } catch (error) {
+                console.error('Error:', error);
+                thinkingMessageDiv.innerText = `糟糕，發生錯誤：${error.message}`;
+            }
+        }
+
+        function escapeHtml(text) {
+            return String(text ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        function formatMessage(text) {
+            return escapeHtml(text)
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^\s*\*\s+/gm, '• ')
+                .replace(/\n/g, '<br>');
+        }
+
+        /* --- ★ 更新 appendMessage 函式以使用玻璃質感樣式 --- */
         function appendMessage(text, sender) {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.marginBottom = '1rem';
+
+            // 1. 建立 messageDiv
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', sender + '-message');
-            messageDiv.innerText = text;
-            chatBox.appendChild(messageDiv);
-            // 自動捲動到最下面
+            messageDiv.classList.add('message'); // 使用 'message' class
+
+            // 2. 根據 sender 決定樣式和對齊
+            if (sender === 'user') {
+                wrapper.style.justifyContent = 'flex-end';
+                messageDiv.classList.add('user-message'); // 使用 'user-message' class
+            } else {
+                wrapper.style.justifyContent = 'flex-start';
+                messageDiv.classList.add('ai-message'); // 使用 'ai-message' class
+            }
+
+            // 3. 格式化文字，處理 AI 偶爾輸出的 Markdown 星號
+            messageDiv.innerHTML = formatMessage(text);
+
+            wrapper.appendChild(messageDiv);
+            chatBox.appendChild(wrapper);
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 4. 返回 messageDiv，以便 'AI 思考中...' 訊息可以被更新
             return messageDiv;
         }
+    </script>
+    <script>
+        //滑鼠
+        const cursorImg = document.querySelector('.cursor-container img');
+        let angle = 0;
+
+        if (cursorImg) {
+            cursorImg.style.transform = 'translate(-100px, -100px)';
+        }
+
+        window.addEventListener('mousemove', function (e) {
+            if (cursorImg) {
+                if (Math.abs(e.movementX) > 0 || Math.abs(e.movementY) > 0) {
+                    // bmi.html 的旋轉邏輯
+                    angle = Math.atan2(e.movementY, e.movementX) + Math.PI / 2;
+                }
+                // bmi.html 的置中邏輯
+                cursorImg.style.transform = `translate(${e.clientX - cursorImg.width / 2}px, ${e.clientY - cursorImg.height / 2}px) rotate(${angle}rad)`;
+            }
+        })
     </script>
 </body>
 

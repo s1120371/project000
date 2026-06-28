@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>健康管家 Health Tracker</title>
+  <link rel="icon" href="{{ url_for('static', filename='leaf.png') }}" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
+</head>
+
+<body>
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
+
+  <div class="aurora-background">
+    <div class="aurora-shape shape-1"></div>
+    <div class="aurora-shape shape-2"></div>
+    <div class="aurora-shape shape-3"></div>
+    <div class="aurora-shape shape-4"></div>
+    <div class="aurora-shape shape-5"></div>
+    <div class="aurora-shape shape-6"></div>
+  </div>
+
+  <div class="top-section">
+    <header>
+      <div class="container">
+        <h1><img src="{{ url_for('static', filename='leaf.png') }}" alt="葉子圖示" width="40" height="40"
+            style="vertical-align: middle;"> 健康管家</h1>
+        <nav>
+          <span id="user-identity" style="margin-right: 20px;"></span>
+          <span id="login-links"><a href="/login">登入 / 註冊</a></span>
+          <span id="auth-links" style="display: none;">
+            <a href="/edit-profile">個人資料</a>
+            <a href="#" id="logoutBtn">登出</a>
+          </span>
+        </nav>
+      </div>
+    </header>
+
+    <div class="nav-wrapper">
+      <ul id="nav">
+        <li class="slide1"></li>
+        <li class="slide2"></li>
+        <li><a href="/nutrition"><img src="{{ url_for('static', filename='nutr.png') }}" alt="營養分析圖示" width="20"
+              height="20" style="vertical-align: middle;"> 營養分析</a></li>
+        <li><a href="/"><img src="{{ url_for('static', filename='heart.png') }}" alt="愛心圖示" width="20" height="20"
+              style="vertical-align: middle;"> 健康建議</a></li>
+        <li><a href="/achievements"><img src="{{ url_for('static', filename='ach.png') }}" alt="獎盃圖示" width="20"
+              height="20" style="vertical-align: middle;"> 健康目標</a></li>
+        <li><a href="/bmi"><img src="{{ url_for('static', filename='bmi.png') }}" alt="三角板圖示" width="20" height="20"
+              style="vertical-align: middle;"> BMI 計算</a></li>
+      </ul>
+    </div>
+
+    <section class="hero">
+      <div class="container">
+        <h2 id="welcome-title">讓飲食更智慧，健康看得見</h2>
+        <p>提供全面性的健康飲食分析</p>
+      </div>
+    </section>
+
+
+  </div>
+
+  <section class="user-data container">
+    <h2><img src="{{ url_for('static', filename='person.png') }}" alt="人像圖示" width="20" height="20"
+        style="vertical-align: middle;"> 使用者個人資料</h2>
+    <div id="userInfo" class="info-box" style="display:none;">
+      <p><strong>帳號：</strong><span id="username"></span></p>
+      <p><strong>姓名：</strong><span id="fullname"></span></p>
+      <p><strong>性別：</strong><span id="gender"></span></p>
+      <p><strong>生日：</strong><span id="birthdate"></span></p>
+      <p><strong>飲食習慣：</strong><span id="diet"></span></p>
+      <p><strong>健康目標：</strong><span id="goal"></span></p>
+      <p><strong>過敏源：</strong><span id="allergens"></span></p>
+    </div>
+  </section>
+  <br>
+  <section class="news-preview">
+    <div class="container">
+      <h3><img src="{{ url_for('static', filename='news.png') }}" alt="三角板圖示" width="40" height="40"
+          style="vertical-align: middle;"> 相關新聞</h3>
+      <div class="card-container">
+        <div class="card">
+          <div class="imgBx"
+            style="--img:url('https://pgw.udn.com.tw/gw/photo.php?u=https://uc.udn.com.tw/photo/2025/05/14/0/32038101.jpg&x=0&y=0&sw=0&sh=0&sl=W&fw=800&exp=3600&w=465&nt=1')">
+          </div>
+          <div class="content">
+            <h3>正餐時間外老覺得餓？恐是蛋白質不足<br /><span>UDN News</span></h3>
+            <p>蛋白質是維持健康與代謝的重要營養素，攝取不足易感疲憊與飢餓。專家建議每餐攝取30公克蛋白質，從早餐起搭配乳製品、堅果等天然食材，有助提升飽足感與修復力，維持身體活力。</p>
+            <a href="https://udn.com/news/story/7266/8738067" class="news-btn" target="_blank"
+              rel="noopener noreferrer">閱讀全文</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="imgBx" style="--img:url('https://img95.699pic.com/photo/50400/6336.jpg_wh860.jpg')"></div>
+          <div class="content">
+            <h3>減肥失敗真相曝光！蛋白質吃不夠才是主因<br /><span>Yahoo News</span></h3>
+            <p>研究指出，蛋白質攝取不足會導致過度進食、熱量超標，反而變胖。減重時應確保飲食中蛋白質達15%，提升飽足感、穩定食慾，才能有效控制體重，避免高脂與高糖飲食。</p>
+            <a href="https://health.udn.com/health/story/6037/8227694" class="news-btn" target="_blank"
+              rel="noopener noreferrer">閱讀全文</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="imgBx"
+            style="--img:url('https://s.yimg.com/ny/api/res/1.2/O_90tCI_3lPZfh2cLw5Tzg--/YXBwaWQ9aGlnaGxhbmRlcjt3PTk2MDtoPTY0MDtjZj13ZWJw/https://media.zenfs.com/en/evergreen.ttvc.com.tw/06d8a0efa092d7ed5801be5cda75336e')">
+          </div>
+          <div class="content">
+            <h3>養生女自製健康早餐 「1吃法」險得糖尿病<br /><span>Health UDN</span></h3>
+            <p>五穀粉雖健康，但磨粉後易轉為「糖水」，恐導致肥胖與血糖飆升。建議選原型穀物、控制份量，搭配蛋白質與好油脂，避免天天大量飲用。</p>
+            <a href="https://tw.news.yahoo.com/%E6%B8%9B%E8%82%A5%E5%A4%B1%E6%95%97%E7%9C%9F%E7%9B%B8%E6%9B%9D%E5%85%89-%E8%9B%8B%E7%99%BD%E8%B3%AA%E5%90%83%E4%B8%8D%E5%A4%A0%E6%89%8D%E6%98%AF%E4%B8%BB%E5%9B%A0-002333952.html"
+              class="news-btn" target="_blank" rel="noopener noreferrer">閱讀全文</a>
+          </div>
+        </div>
+      </div>
+      <p class="update-date"><span>資料更新日期：</span><span id="updateDate">2025-09-26</span></p>
+
+
+    </div>
+
+  </section>
+
+  <!-- <div class="wave-container">
+    <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+      viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+      <defs>
+        <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+      </defs>
+      <g class="parallax">
+        <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(158, 188, 173,0.7)" />
+        <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(158, 188, 173,0.5)" />
+        <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(158, 188, 173,0.3)" />
+        <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(76,175,80,0.2)" />
+      </g>
+    </svg>
+  </div> -->
+
+  <footer>
+    <p>&copy; 2025 健康管家 Health Tracker</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const idToken = sessionStorage.getItem('firebaseIdToken');
+      const userIdentity = document.getElementById("user-identity");
+      const authLinks = document.getElementById("auth-links");
+      const loginLinks = document.getElementById("login-links");
+      const welcomeTitle = document.getElementById("welcome-title");
+      const userInfoBox = document.getElementById("userInfo");
+
+      if (!idToken) {
+        authLinks.style.display = "none";
+        loginLinks.style.display = "inline";
+        welcomeTitle.textContent = "歡迎訪客！登入後可查看個人化資訊";
+        userInfoBox.innerHTML = '<p>請<a href="/login">登入</a>以查看您的個人資料。</p>';
+        userInfoBox.style.display = "block";
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/user-profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          }
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || '無法獲取使用者資料，請重新登入');
+        }
+
+        const data = await response.json();
+
+        authLinks.style.display = "inline";
+        loginLinks.style.display = "none";
+
+        const username = data.username || data.email;
+        welcomeTitle.innerHTML = `<img src="{{ url_for('static', filename='hello.png') }}" alt="揮手圖示" width="30" height="30" style="vertical-align: middle;"> 歡迎回來，${username}`;
+        userIdentity.textContent = username;
+
+
+        userInfoBox.style.display = "block";
+        document.getElementById("username").textContent = data.username || "未填寫";
+        document.getElementById("fullname").textContent = data.fullname || "未填寫";
+        document.getElementById("gender").textContent = data.gender || "未填寫";
+        document.getElementById("birthdate").textContent = data.birthdate || "未填寫";
+        document.getElementById("diet").textContent = data.diet || "未填寫";
+        document.getElementById("goal").textContent = data.goal || "未填寫";
+        document.getElementById("allergens").textContent = (data.allergens || []).join(", ") || "無";
+
+      } catch (error) {
+        console.error('API 呼叫失敗:', error);
+        sessionStorage.removeItem('firebaseIdToken');
+        authLinks.style.display = "none";
+        loginLinks.style.display = "inline";
+        welcomeTitle.textContent = "歡迎訪客！登入後可查看個人化資訊";
+        userInfoBox.innerHTML = `<p>⚠️ 驗證已過期，請<a href="/login">重新登入</a>以查看您的個人資料。</p>`;
+        userInfoBox.style.display = "block";
+      }
+    });
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn?.addEventListener("click", () => {
+      sessionStorage.removeItem('firebaseIdToken');
+      window.location.href = "/login";
+    });
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $("#nav a").on("click", function () {
+        var position = $(this).parent().position();
+        var width = $(this).parent().width();
+        $("#nav .slide1").css({ opacity: 1, left: +position.left, width: width });
+      });
+      $("#nav a").on("mouseover", function () {
+        var position = $(this).parent().position();
+        var width = $(this).parent().width();
+        $("#nav .slide2").css({ opacity: 1, left: +position.left, width: width }).addClass("squeeze");
+      });
+      $("#nav a").on("mouseout", function () {
+        $("#nav .slide2").css({ opacity: 0 }).removeClass("squeeze");
+      });
+
+      function setActiveSlide() {
+        var currentPath = window.location.pathname;
+        var activeLink = null;
+
+        $("#nav li a").each(function () {
+          if ($(this).attr('href') === currentPath) {
+            activeLink = $(this);
+            return false;
+          }
+        });
+
+        if (!activeLink) {
+          activeLink = $("#nav li a[href='/']");
+        }
+
+      }
+
+      setActiveSlide();
+    });
+  </script>
+
+  <!-- 新增的滑鼠追蹤腳本 -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
+  </script>
+
+</body>
+
+</html>

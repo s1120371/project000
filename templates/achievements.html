@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>健康目標</title>
+  <link rel="icon" href="{{ url_for('static', filename='ach.png') }}" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* 引入 zpix 字體 */
+    @font-face {
+      font-family: 'Zpix';
+      src: url('/static/zpix.ttf') format('truetype');
+    }
+
+    :root {
+      --green: #4caf50;
+      --green-dark: #2e7d32;
+      --blue: #2e5caa;
+      --red: #e53935;
+      --bg: #f4f6f9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      /* background-color: var(--bg); */
+      /* 註解或刪除這行 */
+      background-color: transparent;
+      /* 新增：設為透明 */
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #333;
+      line-height: 1.6;
+      position: relative;
+      /* 新增：為了 z-index */
+      z-index: 1;
+      /* 新增：確保在背景之上 */
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--green-dark);
+      margin-bottom: 15px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e6e9ef;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(30, 60, 90, .06);
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+
+    input[type="number"],
+    input[type="date"] {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 12px 14px;
+      margin-top: 6px;
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #cfd7e3;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input[type="number"]:focus,
+    input[type="date"]:focus {
+      border-color: #8bc34a;
+      box-shadow: 0 0 0 4px rgba(139, 195, 74, .15);
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: var(--green);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .08s, box-shadow .2s, background-color .3s;
+      box-shadow: 0 6px 12px rgba(76, 175, 80, .25);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .delete-btn {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .btn-secondary {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #fff;
+      color: var(--green);
+      border: 1.5px solid var(--green);
+      box-shadow: 0 4px 10px rgba(76, 175, 80, .12);
+    }
+
+    .btn-secondary:hover {
+      background: #e8f5e9;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #e8f5e9;
+      color: var(--green-dark);
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #c8e6c9;
+    }
+
+    .progress {
+      width: 100%;
+      height: 14px;
+      background: #edf2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green) 0%, #6fd07a 100%);
+      transition: width .3s ease;
+    }
+
+    .quick-keys {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .key {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #dde3ee;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: .2px;
+      box-shadow: 0 6px 14px rgba(20, 40, 70, .08);
+    }
+
+    .key:hover {
+      background: #f7f9ff;
+    }
+
+    .key.positive {
+      border-color: #c8e6c9;
+      color: #1c38b7;
+      background: linear-gradient(180deg, #ffffff 0%, #f3fbf5 100%);
+    }
+
+    .key.negative {
+      border-color: #f5c6c6;
+      color: #5d1cb7;
+      background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+    }
+
+    .key[data-type="water"]::before {
+      content: "";
+      display: inline-block;
+      width: 20px;
+      /* 根據你的圖片大小調整 */
+      height: 20px;
+      /* 根據你的圖片大小調整 */
+      background-image: url('{{ url_for("static", filename="water.png") }}');
+      background-size: cover;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .key[data-type="ex"]::before {
+      content: "🏃";
+      margin-right: 6px;
+    }
+
+    .custom-input {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .custom-input input {
+      font-family: 'Zpix', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 10px 12px;
+      border: 1px solid #cfd7e3;
+      border-radius: 10px;
+      width: 140px;
+    }
+
+    .custom-input input:focus {
+      border-color: #8bc34a;
+      box-shadow: 0 0 0 4px rgba(139, 195, 74, .12);
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .06);
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #eef1f7;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background: #f5faf6;
+      color: #355e3b;
+      font-weight: 800;
+    }
+
+    tr:nth-child(even) {
+      background: #fafcfe;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f9ff;
+      color: #1f3e7a;
+      padding: 8px 12px;
+      border: 1px solid #cfe0ff;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .badge.lock {
+      opacity: .5;
+      filter: grayscale(100%);
+    }
+
+    #backButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #2196f3;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 800;
+      box-shadow: 0 6px 14px rgba(33, 150, 243, .25);
+    }
+
+    #backButton:hover {
+      background: #1976d2;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    @media (min-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .spacer-24 {
+      margin-top: 24px;
+    }
+
+    /* 滑鼠設定 */
+    .cursor-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .cursor-container img {
+      width: 40px;
+      height: 40px;
+      position: absolute;
+      top: -20px;
+      left: -20px;
+    }
+
+    /* 動態背景 */
+    .aurora-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      /* 確保在內容之下 */
+      overflow: hidden;
+      background-color: #f7f9fc;
+      /* 背景底色 */
+    }
+
+    .aurora-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.6;
+    }
+
+    .shape-1 {
+      background-color: #88ff96;
+      width: 40vmin;
+      height: 40vmin;
+      top: 0;
+      left: 0;
+      animation: move-path-1 6s infinite alternate ease-in-out;
+    }
+
+    .shape-2 {
+      background-color: #aaefff;
+      width: 35vmin;
+      height: 35vmin;
+      top: 0;
+      left: 50%;
+      animation: move-path-2 5s infinite alternate ease-in-out 1s;
+    }
+
+    .shape-3 {
+      background-color: #4CAF50;
+      width: 45vmin;
+      height: 45vmin;
+      top: 0;
+      right: 0;
+      animation: move-path-3 7s infinite alternate ease-in-out;
+    }
+
+    .shape-4 {
+      background-color: #c6ffcd;
+      width: 30vmin;
+      height: 30vmin;
+      top: 50%;
+      right: 0;
+      animation: move-path-4 8s infinite alternate ease-in-out 2s;
+    }
+
+    .shape-5 {
+      background-color: #4CAF50;
+      width: 25vmin;
+      height: 25vmin;
+      bottom: 0;
+      right: 0;
+      animation: move-path-1 9s infinite alternate-reverse ease-in-out;
+    }
+
+    .shape-6 {
+      background-color: #fdeff9;
+      width: 30vmin;
+      height: 30vmin;
+      bottom: 0;
+      left: 50%;
+      animation: move-path-2 4s infinite alternate-reverse ease-in-out 1.5s;
+    }
+
+    @keyframes move-path-1 {
+      from {
+        transform: translate(-20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(100vw - 80%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-2 {
+      from {
+        transform: translate(-50%, -20%);
+      }
+
+      to {
+        transform: translate(-50%, calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-3 {
+      from {
+        transform: translate(20%, -20%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), calc(100vh - 80%));
+      }
+    }
+
+    @keyframes move-path-4 {
+      from {
+        transform: translate(20%, -50%);
+      }
+
+      to {
+        transform: translate(calc(-100vw + 120%), -50%);
+      }
+    }
+
+    /* --- ★ (新) 像素風返回按鈕樣式 ★ --- */
+
+    /* 1. 定位容器 (取代原本 #backButton 的定位) */
+    .game-back-button-container {
+      position: fixed;
+      top: 50px;
+      right: 20px;
+      z-index: 1001;
+      /* 確保在最上層 */
+    }
+
+    .pixel-button {
+      position: relative;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      /* ★ 使用 Zpix 字體 ★ */
+      font-family: 'Zpix', sans-serif;
+      font-size: 16px;
+      /* 稍微調大字體 */
+      image-rendering: pixelated;
+      transition: all 0.1s ease;
+    }
+
+    .button-body {
+      position: relative;
+      /* 預設顏色：改為您原本的藍色系，或者保留像素風的橘色？這裡保留橘色更有遊戲感 */
+      background: #35ff72;
+      color: #fff;
+      padding: 10px 20px;
+      /* 調整內距 */
+      border: 3px solid #000;
+      box-shadow:
+        inset 3px 3px 0px #5aff68,
+        inset -3px -3px 0px #1acc26,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      text-shadow: 2px 2px 0px #000;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    /* ★ 修改：彈出的 Home Icon (取代原本的 .coin) ★ */
+    .pixel-home-icon {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      /* 設定背景圖為 home.png */
+      background-image: url('/static/home.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      /* 預設隱藏 */
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .button-glow {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      background: linear-gradient(45deg, #ff6b35, #ffd700, #35ff6b, #356bff, #ff35ff);
+      border-radius: 6px;
+      opacity: 0;
+      z-index: 1;
+      animation: rainbow-glow 0.5s ease-in-out infinite;
+      /* 加上 infinite 讓它一直閃 */
+      display: none;
+      /* 預設隱藏，hover 時顯示 */
+    }
+
+    /* --- Hover 效果 --- */
+    .pixel-button:hover .button-body {
+      background: #35ff6b;
+      /* Hover 變綠色 */
+      box-shadow:
+        inset 3px 3px 0px #5aff8c,
+        inset -3px -3px 0px #1acc4a,
+        3px 3px 0px #000,
+        6px 6px 0px rgba(0, 0, 0, 0.3);
+      transform: scale(1.05);
+      color: #000;
+      /* 綠底配黑字比較清楚 */
+      text-shadow: none;
+    }
+
+    .pixel-button:hover .button-glow {
+      opacity: 0.8;
+      display: block;
+    }
+
+    /* ★ 觸發彈出動畫 ★ */
+    .pixel-button:hover .pixel-home-icon {
+      animation: home-pop-up 0.6s ease-out;
+    }
+
+    .pixel-button:active .button-body {
+      background: #ff35ff;
+      /* 點擊變紫色 */
+      transform: translate(3px, 3px) scale(0.98);
+      box-shadow:
+        inset 3px 3px 0px #ff5aff,
+        inset -3px -3px 0px #cc1acc,
+        0px 0px 0px #000,
+        3px 3px 0px rgba(0, 0, 0, 0.3);
+      color: #fff;
+      text-shadow: 2px 2px 0px #000;
+    }
+
+    /* 分數/文字彈出 */
+    .score-popup {
+      position: absolute;
+      top: -20px;
+      right: -10px;
+      font-size: 12px;
+      color: #ffd700;
+      text-shadow: 1px 1px 0 #000;
+      opacity: 0;
+      pointer-events: none;
+      font-family: 'Zpix', sans-serif;
+    }
+
+    .pixel-button:active .score-popup {
+      animation: score-popup-anim 0.6s ease-out;
+    }
+
+    /* --- 動畫定義 --- */
+
+    /* Icon 彈出動畫 */
+    @keyframes home-pop-up {
+      0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px) scale(0.5);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-25px) scale(1.2);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px) scale(1);
+      }
+    }
+
+    @keyframes score-popup-anim {
+      0% {
+        opacity: 0;
+        transform: translateY(0);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateY(-15px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+    }
+
+    @keyframes rainbow-glow {
+      0% {
+        opacity: 0.5;
+        filter: hue-rotate(0deg);
+      }
+
+      100% {
+        opacity: 0.8;
+        filter: hue-rotate(360deg);
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
+</head>
+
+<body>
+  <!-- 動態背景 -->
+  <div class="aurora-background">
+    <div class="aurora-shape shape-1"></div>
+    <div class="aurora-shape shape-2"></div>
+    <div class="aurora-shape shape-3"></div>
+    <div class="aurora-shape shape-4"></div>
+    <div class="aurora-shape shape-5"></div>
+    <div class="aurora-shape shape-6"></div>
+  </div>
+  <!-- 滑鼠設定 -->
+  <div class="cursor-container">
+    <img src="{{ url_for('static', filename='my-cursor.png') }}" />
+  </div>
+  <div class="game-back-button-container">
+    <a href="/home" style="text-decoration: none;">
+      <button class="pixel-button" type="button">
+        <div class="button-glow"></div>
+        <div class="button-body">
+          <img src="{{ url_for('static', filename='home.png') }}" alt="icon"
+            style="width: 20px; vertical-align: middle; margin-right:5px;">
+          返回主畫面
+        </div>
+        <div class="pixel-home-icon"></div>
+        <div class="score-popup">GO!</div>
+      </button>
+    </a>
+  </div>
+  <h2><img src="{{ url_for('static', filename='ach.png') }}" alt="獎盃圖示" width="25" height="25"
+      style="vertical-align: middle;"> 健康目標</h2>
+  <p style="margin-bottom:10px;color:#555">點擊快速鍵或輸入自訂數值來記錄飲水與運動，達成目標自動解鎖徽章！</p>
+  <section class="card">
+    <div class="row" style="justify-content: space-between;">
+      <div class="row">
+        <span class="pill">今天：<span id="today"></span></span>
+        <span class="pill">帳號：<span id="who"></span></span>
+      </div>
+      <div class="row">
+        <div><label>飲水目標(ml)</label><input type="number" id="goalWater" min="500" step="100" value="2000" /></div>
+        <div><label>運動目標(分鐘)</label><input type="number" id="goalExercise" min="10" step="5" value="30" /></div>
+        <button class="btn-secondary" id="saveGoals">儲存目標</button>
+      </div>
+    </div>
+    <div class="spacer-24"></div>
+    <section class="card">
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='date.png') }}" alt="日曆圖示" width="23"
+          height="23" style="vertical-align: middle;"> 記錄日期</h3><input type="date"
+        id="datePicker" /><small>（可切換日期補登/修正當天數據）</small>
+    </section>
+    <div class="grid grid-2">
+      <div class="card" style="margin:0;">
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"
+            height="23" style="vertical-align: middle;"> 今日飲水</h3>
+        <div class="row"><strong>已喝</strong>
+          <div id="waterNow" style="font-weight:700;">0</div>
+          <div>ml</div>
+        </div>
+        <div class="progress" style="margin:10px 0 6px;">
+          <div id="waterBar" class="bar"></div>
+        </div>
+        <div class="row" style="justify-content: space-between;">
+          <small>目標：<span id="waterGoalText">2000</span> ml</small><small><span id="waterPct">0%</span></small>
+        </div>
+        <div class="quick-keys">
+          <button class="key positive" data-type="water" data-water="200">+200 ml</button>
+          <button class="key positive" data-type="water" data-water="350">+350 ml</button>
+          <button class="key positive" data-type="water" data-water="500">+500 ml</button>
+          <button class="key negative" data-type="water" data-water="-200">-200 ml</button>
+        </div>
+        <div class="custom-input">
+          <input type="number" id="customWater" placeholder="自訂 ml" min="1" /><button id="addCustomWater"
+            class="btn-secondary">新增飲水</button>
+        </div>
+      </div>
+      <div class="card" style="margin:0;">
+        <h3 style="margin-top:0;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"
+            height="25" style="vertical-align: middle;"> 今日運動</h3>
+        <div class="row"><strong>已運動</strong>
+          <div id="exNow" style="font-weight:700;">0</div>
+          <div>分鐘</div>
+        </div>
+        <div class="progress" style="margin:10px 0 6px;">
+          <div id="exBar" class="bar"></div>
+        </div>
+        <div class="row" style="justify-content: space-between;">
+          <small>目標：<span id="exGoalText">30</span> 分</small><small><span id="exPct">0%</span></small>
+        </div>
+        <div class="quick-keys">
+          <button class="key positive" data-type="ex" data-ex="10">+10 分</button>
+          <button class="key positive" data-type="ex" data-ex="20">+20 分</button>
+          <button class="key positive" data-type="ex" data-ex="30">+30 分</button>
+          <button class="key negative" data-type="ex" data-ex="-10">-10 分</button>
+        </div>
+        <div class="custom-input">
+          <input type="number" id="customEx" placeholder="自訂分鐘" min="1" /><button id="addCustomEx"
+            class="btn-secondary">新增運動</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='badge.png') }}" alt="徽章圖示" width="25"
+        height="25" style="vertical-align: middle;"> 今日徽章</h3>
+    <div id="badges" class="row" style="gap:10px;"></div>
+  </section>
+  <div class="spacer-24"></div>
+  <section class="grid grid-2">
+    <div class="card">
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='bottle.png') }}" alt="水瓶圖示" width="23"
+          height="23" style="vertical-align: middle;"> 近七天飲水趨勢</h3><canvas id="waterTrendChart" height="120"></canvas>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px;"><img src="{{ url_for('static', filename='exersise.png') }}" alt="啞鈴圖示" width="25"
+          height="25" style="vertical-align: middle;"> 近七天運動趨勢</h3><canvas id="exerciseTrendChart"
+        height="120"></canvas>
+    </div>
+  </section>
+  <div class="spacer-24"></div>
+  <section class="card">
+    <h3 style="margin:0 0 10px;">🧾 歷史記錄</h3>
+    <div style="overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>飲水 (ml)</th>
+            <th>運動 (分鐘)</th>
+            <th>最後更新時間</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    let chartInstanceWater = null;
+    let chartInstanceExercise = null;
+    // --- DOM refs and Global State ---
+    const who = document.getElementById('who');
+    const todayEl = document.getElementById('today');
+    const datePicker = document.getElementById('datePicker');
+    const waterNow = document.getElementById('waterNow'), waterBar = document.getElementById('waterBar'), waterGoalText = document.getElementById('waterGoalText'), waterPct = document.getElementById('waterPct');
+    const exNow = document.getElementById('exNow'), exBar = document.getElementById('exBar'), exGoalText = document.getElementById('exGoalText'), exPct = document.getElementById('exPct');
+    const goalWaterInput = document.getElementById('goalWater'), goalExInput = document.getElementById('goalExercise'), saveGoalsBtn = document.getElementById('saveGoals');
+    const badgesBox = document.getElementById('badges'), historyBody = document.getElementById('historyBody');
+
+    let idToken = null;
+    let chartInstance = null;
+    let clickLocked = false;
+
+    const fmtDate = (d) => d.toISOString().slice(0, 10);
+    const todayStr = fmtDate(new Date());
+    todayEl.textContent = todayStr;
+    if (datePicker) datePicker.value = todayStr;
+
+    // --- API Helper ---
+    async function apiFetch(endpoint, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      const response = await fetch(endpoint, { ...options, headers });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+      }
+      // 如果是 204 No Content (例如 DELETE 成功)，就沒有 .json() 可以呼叫
+      if (response.status === 204 || response.status === 201 && response.headers.get('content-length') === '0') {
+        return null;
+      }
+      return response.json();
+    }
+
+    // --- Goals Logic ---
+    async function loadGoals() {
+      try {
+        const goals = await apiFetch('/api/achievement-goals');
+        goalWaterInput.value = goals.goalWater;
+        goalExInput.value = goals.goalExercise;
+        waterGoalText.textContent = goals.goalWater;
+        exGoalText.textContent = goals.goalExercise;
+      } catch (error) {
+        console.error("Failed to load goals:", error);
+      }
+    }
+
+    saveGoalsBtn.addEventListener('click', async () => {
+      const goalWater = Math.max(500, Number(goalWaterInput.value) || 2000);
+      const goalExercise = Math.max(10, Number(goalExInput.value) || 30);
+      try {
+        await apiFetch('/api/achievement-goals', {
+          method: 'POST',
+          body: JSON.stringify({ goalWater, goalExercise })
+        });
+        waterGoalText.textContent = goalWater;
+        exGoalText.textContent = goalExercise;
+        await loadDay(datePicker.value);
+        await loadRecent();
+        await loadHistory();
+        alert('✅ 目標已更新');
+      } catch (error) {
+        alert(`❌ 更新目標失敗: ${error.message}`);
+      }
+    });
+
+    // --- Record Update Logic ---
+    async function updateRecord(dateStr, { addWater = 0, addExercise = 0 }) {
+      if (clickLocked) return;
+      clickLocked = true;
+      setTimeout(() => clickLocked = false, 500);
+
+      try {
+        await apiFetch(`/api/achievement-records/${dateStr}`, {
+          method: 'POST',
+          body: JSON.stringify({ addWater, addExercise })
+        });
+        // 異步刷新所有相關的 UI 元件
+        await Promise.all([
+          loadDay(dateStr),
+          evaluateBadges(dateStr),
+          loadRecent(),
+          loadHistory()
+        ]);
+      } catch (error) {
+        console.error("Failed to update record:", error);
+        alert(`❌ 更新紀錄失敗: ${error.message}`);
+      }
+    }
+
+    // --- Event Listeners for Quick Keys and Custom Inputs ---
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.classList.contains('key')) {
+        const dw = Number(t.dataset.water) || 0;
+        const de = Number(t.dataset.ex) || 0;
+        updateRecord(datePicker.value, { addWater: dw, addExercise: de });
+      }
+    });
+
+    document.getElementById('addCustomWater').addEventListener('click', () => {
+      const input = document.getElementById('customWater');
+      const val = Number(input.value);
+      if (val) updateRecord(datePicker.value, { addWater: val });
+      input.value = '';
+    });
+
+    document.getElementById('addCustomEx').addEventListener('click', () => {
+      const input = document.getElementById('customEx');
+      const val = Number(input.value);
+      if (val) updateRecord(datePicker.value, { addExercise: val });
+      input.value = '';
+    });
+
+    // --- UI Loading and Rendering ---
+    async function loadDay(dateStr) {
+      try {
+        const record = await apiFetch(`/api/achievement-records/${dateStr}`);
+        const gw = Number(goalWaterInput.value);
+        const ge = Number(goalExInput.value);
+
+        const water = record.waterMl || 0, ex = record.exerciseMin || 0;
+        waterNow.textContent = water;
+        exNow.textContent = ex;
+
+        const wPct = Math.min(100, Math.round((water / gw) * 100));
+        const ePct = Math.min(100, Math.round((ex / ge) * 100));
+        waterPct.textContent = `${wPct}%`;
+        exPct.textContent = `${ePct}%`;
+        waterBar.style.width = `${wPct}%`;
+        exBar.style.width = `${ePct}%`;
+      } catch (error) {
+        console.error(`Failed to load day ${dateStr}:`, error);
+      }
+    }
+
+    async function loadRecent() {
+      try {
+        const records = await apiFetch('/api/achievement-history?limit=7');
+        console.log('Records:', records); // 加入這行來檢查API返回的資料
+        records.reverse(); // API 回傳是降冪，圖表需要升冪
+        const labels = records.map(r => r.id.slice(5));
+        const waterData = records.map(r => r.waterMl || 0);
+        const exData = records.map(r => r.exerciseMin || 0);
+
+        // 飲水趨勢圖
+        const waterCtx = document.getElementById('waterTrendChart').getContext('2d');
+        if (chartInstanceWater) chartInstanceWater.destroy();
+        chartInstanceWater = new Chart(waterCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '飲水(ml)', data: waterData, borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.18)', tension: .3, fill: true, pointRadius: 3 },
+            ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // 運動趨勢圖
+        const exCtx = document.getElementById('exerciseTrendChart').getContext('2d');
+        if (chartInstanceExercise) chartInstanceExercise.destroy();
+        chartInstanceExercise = new Chart(exCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '運動(分)', data: exData, borderColor: '#2e5caa', backgroundColor: 'rgba(46,92,170,.18)', tension: .3, fill: true, pointRadius: 3 },
+            ]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      } catch (error) {
+        console.error("Failed to load recent data for chart:", error);
+      }
+    }
+
+
+    async function loadHistory() {
+      try {
+        const records = await apiFetch('/api/achievement-history?limit=30');
+        historyBody.innerHTML = records
+          .filter(v => v.waterMl > 0 || v.exerciseMin > 0)  // 篩選出有飲水或運動數據的紀錄
+          .map(v => {
+            const updated = v.updatedAt ? new Date(v.updatedAt).toLocaleString() : 'N/A'; // 格式化時間戳
+            return `
+              <tr>
+                <td>${v.id}</td>
+                <td>${v.waterMl || 0}</td>
+                <td>${v.exerciseMin || 0}</td>
+                <td>${updated}</td>
+                <td><button class="delete-btn" data-id="${v.id}" style="background:#e53935;">刪除</button></td>
+              </tr>`;
+          }).join('');
+      } catch (error) {
+        console.error("Failed to load history:", error);
+      }
+    }
+
+
+    historyBody.addEventListener('click', async (e) => {
+      const t = e.target;
+      if (t.classList.contains('delete-btn') && t.dataset.id) {
+        if (!confirm('確定刪除該記錄？')) return;
+        try {
+          await apiFetch(`/api/achievement-records/${t.dataset.id}`, { method: 'DELETE' });
+          await loadHistory();
+          await loadRecent();
+          await loadDay(datePicker.value);
+        } catch (error) {
+          alert(`❌ 刪除失敗: ${error.message}`);
+        }
+      }
+    });
+
+    // --- Badges Logic ---
+    const BADGES_CONFIG = {
+      'water_2l_day': { name: '水分達標', icon: '<img src="{{ url_for("static", filename="water.png") }}" alt="水滴圖示" width="20" height="20" style="vertical-align: middle;">' },
+      'exercise_30m_day': { name: '動一動', icon: '🏃' },
+      'double_goal_day': { name: '雙達標', icon: '🥇' },
+      'streak_3': { name: '連續3天', icon: '<img src="{{ url_for("static", filename="fire.png") }}" alt="火圖示" width="20" height="20" style="vertical-align: middle;">' }
+    };
+
+    async function loadBadges() {
+      try {
+        const unlockedBadges = await apiFetch('/api/badges');
+        badgesBox.innerHTML = Object.entries(BADGES_CONFIG).map(([id, config]) => {
+          const owned = unlockedBadges[id] && unlockedBadges[id].unlocked;
+          return `<div class="badge ${owned ? '' : 'lock'}" title="${config.name}">${config.icon}<span>${config.name}</span></div>`;
+        }).join('');
+      } catch (error) {
+        console.error("Failed to load badges:", error);
+      }
+    }
+
+    async function evaluateBadges(dateStr) {
+      try {
+        const record = await apiFetch(`/api/achievement-records/${dateStr}`);
+        const waterGoal = Number(goalWaterInput.value);
+        const exerciseGoal = Number(goalExInput.value);
+
+        const water = record.waterMl || 0;
+        const exercise = record.exerciseMin || 0;
+
+        const badges = {};
+
+        // 檢查水分達標
+        if (water >= waterGoal) {
+          badges['water_2l_day'] = true;
+        }
+        else {
+          badges['water_2l_day'] = false;
+        }
+
+        // 檢查運動達標
+        if (exercise >= exerciseGoal) {
+          badges['exercise_30m_day'] = true;
+        }
+        else {
+          badges['exercise_30m_day'] = false;
+        }
+
+        // 檢查雙達標
+        if (water >= waterGoal && exercise >= exerciseGoal) {
+          badges['double_goal_day'] = true;
+        }
+        else {
+          badges['double_goal_day'] = false;
+        }
+
+
+        // 檢查連續3天徽章
+        const recentRecords = await apiFetch('/api/achievement-history?limit=3');
+        const streak = recentRecords.every(record => record.waterMl >= waterGoal && record.exerciseMin >= exerciseGoal);
+        if (streak) {
+          badges['streak_3'] = true;
+        }
+
+        // 更新徽章狀態
+        await apiFetch('/api/badges', {
+          method: 'POST',
+          body: JSON.stringify(badges),
+        });
+
+        // 重新加載徽章
+        await loadBadges();
+      } catch (error) {
+        console.error("Failed to evaluate badges:", error);
+      }
+    }
+
+    // --- Date Picker and Initialization ---
+    datePicker.addEventListener('change', () => {
+      loadDay(datePicker.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      idToken = sessionStorage.getItem('firebaseIdToken');
+      if (!idToken) {
+        alert('請先登入');
+        location.href = '/login';
+        return;
+      }
+
+      try {
+        // 從後端獲取 user profile 來取得 email
+        const profile = await apiFetch('/api/user-profile');
+        who.textContent = profile.email || '已登入';
+      } catch (e) {
+        who.textContent = '已登入';
+      }
+
+      // 平行載入所有需要的資料
+      await Promise.all([
+        loadGoals(),
+        loadDay(datePicker.value),
+        loadRecent(),
+        loadBadges(),
+        loadHistory()
+      ]);
+    });
+  </script>
+  <!-- 滑鼠js -->
+  <script>
+    const cursorImg = document.querySelector('.cursor-container img');
+    let angle = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (Math.abs(e.movementX + e.movementY) > 1) {
+        angle = Math.atan2(e.movementX, -e.movementY);
+      }
+      if (cursorImg) {
+        cursorImg.style.transform = `translate(${e.clientX}px, ${e.clientY}px) rotate(${angle}rad)`;
+      }
+    })
+  </script>
+</body>
+
+</html>
